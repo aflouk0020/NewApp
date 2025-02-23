@@ -29,23 +29,28 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Sign in"
-        android:layout_marginTop="16dp"
-        android:textColor="@android:color/black" />
+        android:background="@color/customGrayGreen"
+        android:backgroundTint="@null"
+        android:layout_marginTop="16dp"/>
 
     <Button
         android:id="@+id/but_create_account"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Create account"
-        android:layout_marginTop="16dp"
-        android:textColor="@android:color/black" />
+        android:background="@color/customGrayGreen"
+        android:backgroundTint="@null"
+        android:layout_marginTop="16dp"/>
+
+
+
     <ProgressBar
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
-        android:progressTint="@android:color/holo_blue_dark"
+        android:progressTint="@color/limeGreen"
         android:visibility="gone"/>
 
 </LinearLayout>

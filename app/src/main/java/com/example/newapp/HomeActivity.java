@@ -55,15 +55,17 @@ public class HomeActivity extends AppCompatActivity {
         return true;
     }
 
-    // Handle menu item clicks
+//     Handle menu item clicks
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_logout) {
+
             logoutUser();
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
+
 
     // Logout function
     private void logoutUser() {
@@ -104,71 +106,3 @@ public class HomeActivity extends AppCompatActivity {
                 }
             };
 }
-
-
-
-//package com.example.newapp;
-//
-//import android.content.Intent;
-//import android.os.Bundle;
-//import android.util.Log;
-//import androidx.annotation.NonNull;
-//import androidx.appcompat.app.AppCompatActivity;
-//import androidx.fragment.app.Fragment;
-//import com.google.android.material.bottomnavigation.BottomNavigationView;
-//import android.view.MenuItem;
-//
-//public class HomeActivity extends AppCompatActivity {
-//
-//    @Override
-//    protected void onCreate(Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_home);
-//
-//        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
-//
-//        // Retrieve User ID and Username from Intent
-//        String userId = getIntent().getStringExtra("USER_ID");
-//        String username = getIntent().getStringExtra("USERNAME");
-//
-//        Log.d("UserInfo", "User ID: " + userId);
-//        Log.d("UserInfo", "Username: " + username);
-//
-//        bottomNavigationView.setOnItemSelectedListener(navListener);
-//
-//        // Load the HomeFragment by default
-//        if (savedInstanceState == null) {
-//            getSupportFragmentManager().beginTransaction()
-//                    .replace(R.id.fragment_container, new HomeFragment())
-//                    .commit();
-//        }
-//    }
-//
-//    private final BottomNavigationView.OnItemSelectedListener navListener =
-//            new BottomNavigationView.OnItemSelectedListener() {
-//                @Override
-//                public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-//                    Fragment selectedFragment = null;
-//                    int itemId = item.getItemId();
-//
-//                    if (itemId == R.id.nav_home) {
-//                        selectedFragment = new HomeFragment();
-//                    } else if (itemId == R.id.nav_assessment) {
-//                        selectedFragment = new AssessmentFragment();
-//                    } else if (itemId == R.id.nav_profile) {
-//                        // Pass User ID to ProfileFragment
-//                        selectedFragment = new ProfileFragment();
-//                        Bundle bundle = new Bundle();
-//                        bundle.putString("USER_ID", getIntent().getStringExtra("USER_ID"));
-//                        selectedFragment.setArguments(bundle);
-//                    }
-//
-//                    if (selectedFragment != null) {
-//                        getSupportFragmentManager().beginTransaction()
-//                                .replace(R.id.fragment_container, selectedFragment)
-//                                .commit();
-//                    }
-//                    return true;
-//                }
-//            };
-//}

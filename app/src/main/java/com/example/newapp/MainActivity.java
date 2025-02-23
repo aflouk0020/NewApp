@@ -89,39 +89,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-//    private void startProgress(String username) {
-//        usernameEditText.setVisibility(View.GONE);
-//        passwordEditText.setVisibility(View.GONE);
-//        signInButton.setVisibility(View.GONE);
-//        createAccountButton.setVisibility(View.GONE);
-//
-//        progressBar.setVisibility(View.VISIBLE);
-//        progressBar.setProgress(0);
-//
-//        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-//        String userId = sharedPreferences.getString(username + "_id", "UNKNOWN_USER");
-//
-//        Runnable runnable = new Runnable() {
-//            @Override
-//            public void run() {
-//                if (counter < 100) {
-//                    counter++;
-//                    progressBar.setProgress(counter);
-//                    handler.postDelayed(this, 50);
-//                } else {
-//                    progressBar.setVisibility(View.GONE);
-//
-//                    // Pass User ID to HomeActivity
-//                    Intent intent = new Intent(MainActivity.this, HomeActivity.class);
-//                    intent.putExtra("USER_ID", userId);
-//                    intent.putExtra("USERNAME", username);
-//                    startActivity(intent);
-//                    finish();
-//                }
-//            }
-//        };
-//        handler.post(runnable);
-//    }
 
     private boolean validateInput(String username, String password) {
         return !username.isEmpty() && !password.isEmpty();
