@@ -6,6 +6,7 @@
         android:title="Logout"
         android:orderInCategory="100"
         android:showAsAction="never"
+        android:textColor="@color/black"
         android:foregroundTint="@color/customGrayGreen"
         />
 

@@ -8,6 +8,6 @@
     <color name="background">#F5F5F5</color>
     <color name="textPrimary">#212121</color>
     <color name="buttonText">#FFFFFF</color>
-    <color name="customGrayGreen">#a5b8aa</color>
-    <color name="limeGreen">#57D478</color>
+    <color name="customGrayGreen">#828f85</color>
+    <color name="darkGray">#727a74</color>
 </resources>

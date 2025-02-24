@@ -3,6 +3,8 @@ package com.example.newapp;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+
+
 public class UserManager {
     private static final String PREF_NAME = "UserPrefs";
 
