@@ -10,7 +10,7 @@
         android:paddingStart="20dp"
         android:gravity="start">
 
-        <!-- Dummy Content to Make Scrolling Work -->
+        <!-- User ID -->
         <TextView
             android:id="@+id/user_id_text"
             android:layout_width="wrap_content"
@@ -20,6 +20,7 @@
             android:text="User ID: Loading..."
             android:textSize="18sp" />
 
+        <!-- Check Rules -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -28,9 +29,7 @@
             android:textSize="16sp"
             android:layout_gravity="start"/>
 
-        <!-- Icon Button for Rules -->
-
-
+        <!-- Info Icon -->
         <ImageView
             android:id="@+id/info_icon"
             android:layout_width="24dp"
@@ -41,18 +40,7 @@
             android:clickable="true"
             android:focusable="true"/>
 
-        <!--        <ImageView-->
-<!--            android:id="@+id/info_icon"-->
-<!--            android:layout_width="24dp"-->
-<!--            android:layout_height="24dp"-->
-<!--            android:layout_marginTop="10dp"-->
-<!--            android:src="@drawable/info_icon"-->
-<!--            android:contentDescription="Rules Icon"-->
-<!--            android:clickable="true"-->
-<!--            android:focusable="true"-->
-<!--            android:onClick="showRulesDialog" />-->
-
-
+        <!-- Family Size -->
         <TextView
             android:id="@+id/family_size_text"
             android:layout_width="wrap_content"
@@ -60,12 +48,21 @@
             android:text="Family Size: Loading..."
             android:textSize="18sp" />
 
+        <!-- Room Number -->
         <TextView
             android:id="@+id/room_number_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Number of Rooms: Loading..."
             android:textSize="18sp" />
+
+        <!-- Add This Button to Edit Household Info -->
+        <Button
+            android:id="@+id/edit_household_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Edit Household Info"
+            android:layout_marginTop="20dp"/>
 
     </LinearLayout>
 </ScrollView>
