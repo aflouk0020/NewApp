@@ -10,44 +10,25 @@
     android:background="@drawable/background_img"
     tools:context=".MainActivity">
 
-    <EditText
-        android:id="@+id/username"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Username"
-        android:layout_marginTop="16dp" />
 
-    <EditText
-        android:id="@+id/password"
-        android:layout_width="match_parent"
+
+
+    <TextView
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="Password"
-        android:inputType="textPassword"
-        android:layout_marginTop="16dp" />
+        android:text="Welcome to FunRgy"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:paddingBottom="20dp"/>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/but_sign_in"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Sign in"
+        android:text="Sign in with Google or Email"
         app:backgroundTint="@color/customGrayGreen"
+        android:onClick="signIn"
         android:layout_marginTop="16dp"/>
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/but_create_account"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Create account"
-        app:backgroundTint="@color/customGrayGreen"
-        android:layout_marginTop="16dp"/>
-
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="30dp"
-        android:progressTint="@color/darkGray"
-        android:visibility="gone"/>
 
 </LinearLayout>

@@ -10,6 +10,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
+import com.google.firebase.auth.FirebaseAuth;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class HomeActivity extends AppCompatActivity {
@@ -31,20 +33,7 @@ public class HomeActivity extends AppCompatActivity {
                     .replace(R.id.fragment_container, new HomeFragment())
                     .commit();
         }
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_home);
-//
-//        BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
-//        bottomNavigationView.setOnItemSelectedListener(navListener);
-//
-//        // Debugging
-//        Log.d("Debug", "HomeActivity Loaded");
-//
-//        if (savedInstanceState == null) {
-//            getSupportFragmentManager().beginTransaction()
-//                    .replace(R.id.fragment_container, new HomeFragment())
-//                    .commit();
-//        }
+
     }
 
     // Create the menu
@@ -59,28 +48,28 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.action_logout) {
-
-            logoutUser();
+            logoutUser();  // Call logout function
             return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
 
-    // Logout function
-    private void logoutUser() {
-        // Clear SharedPreferences
-        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.remove("USER_ID");  // Remove user session
-        editor.apply();
 
-        // Redirect to login
+    // Logout function
+
+    // Logout function using Firebase Authentication
+    private void logoutUser() {
+        // Sign out from Firebase
+        FirebaseAuth.getInstance().signOut();
+
+        // Redirect to login screen
         Intent intent = new Intent(HomeActivity.this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);  // Prevent going back
         startActivity(intent);
         finish();
     }
+
 
     private final BottomNavigationView.OnItemSelectedListener navListener =
             new BottomNavigationView.OnItemSelectedListener() {
