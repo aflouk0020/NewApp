@@ -55,6 +55,13 @@
             android:layout_height="wrap_content"
             android:text="Number of Rooms: Loading..."
             android:textSize="18sp" />
+        <TextView
+            android:id="@+id/energy_usage_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Energy Usage: Calculating..."
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"/>
 
         <!-- Add This Button to Edit Household Info -->
         <Button

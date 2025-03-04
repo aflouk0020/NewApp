@@ -36,5 +36,16 @@
             android:textSize="20sp"
             android:textStyle="bold"
             android:layout_marginTop="16dp"/>
+
+        <!-- ADD THIS MISSING TIMESTAMP TEXTVIEW -->
+        <TextView
+            android:id="@+id/text_timestamp_reading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Last Update: Not Available"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"/>
+
     </LinearLayout>
 </ScrollView>
