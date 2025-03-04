@@ -62,6 +62,13 @@
             android:text="Energy Usage: Calculating..."
             android:textSize="18sp"
             android:layout_marginTop="16dp"/>
+        <TextView
+            android:id="@+id/kwh_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Estimated Monthly kWh: Loading..."
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"/>
 
         <!-- Add This Button to Edit Household Info -->
         <Button
