@@ -2,6 +2,7 @@ package com.example.newapp;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,7 +13,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -24,53 +24,62 @@ import java.nio.charset.StandardCharsets;
 
 public class ProfileFragment extends Fragment {
 
-    private TextView usernameTextView, familySizeTextView, roomNumberTextView, energyUsageTextView, kWhTextView;
+    private static final String TAG = "ProfileFragment";
+    private TextView usernameTextView, energyUsageTextView, kWhTextView;
+    private EditText familySizeEditText, roomNumberEditText;
+    private Button editButton;
     private SharedPreferences sharedPreferences;
     private ImageView infoIcon;
     private FirebaseUser currentUser;
     private FirebaseStorage storage;
+    private boolean isEditing = false; // Track editing state
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_profile, container, false);
 
-        sharedPreferences = getActivity().getSharedPreferences("UserPrefs", getActivity().MODE_PRIVATE);
+        sharedPreferences = requireActivity().getSharedPreferences("UserPrefs", requireActivity().MODE_PRIVATE);
         storage = FirebaseStorage.getInstance();
 
         usernameTextView = view.findViewById(R.id.user_id_text);
-        familySizeTextView = view.findViewById(R.id.family_size_text);
-        roomNumberTextView = view.findViewById(R.id.room_number_text);
+        familySizeEditText = view.findViewById(R.id.family_size_text);
+        roomNumberEditText = view.findViewById(R.id.room_number_text);
         energyUsageTextView = view.findViewById(R.id.energy_usage_text);
-        kWhTextView = view.findViewById(R.id.kwh_text); // New text field for kWh/month
-        Button editButton = view.findViewById(R.id.edit_household_button);
+        kWhTextView = view.findViewById(R.id.kwh_text);
+        editButton = view.findViewById(R.id.edit_household_button);
         infoIcon = view.findViewById(R.id.info_icon);
 
         currentUser = FirebaseAuth.getInstance().getCurrentUser();
 
+        // Initially disable editing
+        setEditingEnabled(false);
+
         loadUserData();
 
-        editButton.setOnClickListener(v -> showEditDialog());
+        editButton.setOnClickListener(v -> toggleEditing());
+
         infoIcon.setOnClickListener(v -> showRules());
 
         return view;
     }
 
     private void loadUserData() {
+        if (getActivity() == null) return;
+
         String email = sharedPreferences.getString("USER_EMAIL", "Guest");
         int familySize = sharedPreferences.getInt("FAMILY_SIZE", 0);
         int roomNumber = sharedPreferences.getInt("ROOM_NUMBER", 0);
 
         usernameTextView.setText("User Email: " + email);
-        familySizeTextView.setText("Family Size: " + familySize);
-        roomNumberTextView.setText("Room Number: " + roomNumber);
+        familySizeEditText.setText(String.valueOf(familySize));
+        roomNumberEditText.setText(String.valueOf(roomNumber));
 
         String energyUsageCategory = calculateEnergyUsage(roomNumber, familySize);
         double kWhPerMonth = calculateKWhPerMonth(roomNumber, familySize);
 
         energyUsageTextView.setText("Energy Usage: " + energyUsageCategory);
         kWhTextView.setText("Estimated Monthly kWh: " + kWhPerMonth + " kWh");
-
     }
 
     private String calculateEnergyUsage(int rooms, int familySize) {
@@ -95,45 +104,46 @@ public class ProfileFragment extends Fragment {
         return (rooms * R) + (familySize * F);
     }
 
-    private void showEditDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle("Update Household Info");
+    private void toggleEditing() {
+        if (isEditing) {
+            saveUserData();
+            setEditingEnabled(false);
+            editButton.setText("Edit Household Info");
+        } else {
+            setEditingEnabled(true);
+            editButton.setText("Save");
+        }
+        isEditing = !isEditing;
+    }
 
-        View view = getLayoutInflater().inflate(R.layout.dialog_edit_household, null);
-        final EditText familySizeInput = view.findViewById(R.id.edit_family_size);
-        final EditText roomNumberInput = view.findViewById(R.id.edit_room_number);
+    private void setEditingEnabled(boolean enabled) {
+        familySizeEditText.setEnabled(enabled);
+        roomNumberEditText.setEnabled(enabled);
+    }
 
-        familySizeInput.setText(String.valueOf(sharedPreferences.getInt("FAMILY_SIZE", 0)));
-        roomNumberInput.setText(String.valueOf(sharedPreferences.getInt("ROOM_NUMBER", 0)));
+    private void saveUserData() {
+        try {
+            int familySize = Integer.parseInt(familySizeEditText.getText().toString());
+            int roomNumber = Integer.parseInt(roomNumberEditText.getText().toString());
 
-        builder.setView(view);
+            SharedPreferences.Editor editor = sharedPreferences.edit();
+            editor.putInt("FAMILY_SIZE", familySize);
+            editor.putInt("ROOM_NUMBER", roomNumber);
+            editor.apply();
 
-        builder.setPositiveButton("Save", (dialog, which) -> {
-            try {
-                int familySize = Integer.parseInt(familySizeInput.getText().toString());
-                int roomNumber = Integer.parseInt(roomNumberInput.getText().toString());
+            loadUserData();
+            uploadHouseholdDataToStorage(familySize, roomNumber);
 
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putInt("FAMILY_SIZE", familySize);
-                editor.putInt("ROOM_NUMBER", roomNumber);
-                editor.apply();
-
-                loadUserData();
-                uploadHouseholdDataToStorage(familySize, roomNumber);
-
-                Toast.makeText(getActivity(), "Household info updated!", Toast.LENGTH_SHORT).show();
-            } catch (NumberFormatException e) {
-                Toast.makeText(getActivity(), "Invalid input!", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-        builder.show();
+            Toast.makeText(getActivity(), "Household info updated!", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Log.e(TAG, "Error saving user data", e);
+            Toast.makeText(getActivity(), "Invalid input!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void uploadHouseholdDataToStorage(int familySize, int roomNumber) {
-        if (currentUser == null) {
-            Toast.makeText(getActivity(), "User not logged in!", Toast.LENGTH_SHORT).show();
+        if (currentUser == null || getActivity() == null) {
+            Log.e(TAG, "User is not logged in or Activity is null.");
             return;
         }
 
@@ -151,20 +161,29 @@ public class ProfileFragment extends Fragment {
             byte[] jsonData = householdData.toString().getBytes(StandardCharsets.UTF_8);
             UploadTask uploadTask = storageRef.putBytes(jsonData);
 
-            uploadTask.addOnSuccessListener(taskSnapshot ->
-                    Toast.makeText(getActivity(), "Data uploaded to Firebase Storage!", Toast.LENGTH_SHORT).show()
-            ).addOnFailureListener(e ->
-                    Toast.makeText(getActivity(), "Upload failed!", Toast.LENGTH_SHORT).show()
-            );
+            uploadTask.addOnSuccessListener(taskSnapshot -> {
+                if (getActivity() != null) {
+                    Toast.makeText(getActivity(), "Data uploaded to Firebase Storage!", Toast.LENGTH_SHORT).show();
+                }
+            }).addOnFailureListener(e -> {
+                Log.e(TAG, "Firebase Upload Failed", e);
+                if (getActivity() != null) {
+                    Toast.makeText(getActivity(), "Upload failed!", Toast.LENGTH_SHORT).show();
+                }
+            });
 
         } catch (Exception e) {
-            e.printStackTrace();
-            Toast.makeText(getActivity(), "Error preparing data for upload!", Toast.LENGTH_SHORT).show();
+            Log.e(TAG, "Error preparing data for upload", e);
+            if (getActivity() != null) {
+                Toast.makeText(getActivity(), "Error preparing data for upload!", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
     private void showRules() {
-        new AlertDialog.Builder(getActivity())
+        if (getActivity() == null) return;
+
+        new androidx.appcompat.app.AlertDialog.Builder(getActivity())
                 .setTitle("App Rules")
                 .setMessage("1. Complete tasks...\n2. Earn points...\n3. Compete with friends...")
                 .setPositiveButton("OK", null)

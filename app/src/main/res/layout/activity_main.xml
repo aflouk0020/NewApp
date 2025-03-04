@@ -29,6 +29,7 @@
         android:text="Sign in with Google or Email"
         app:backgroundTint="@color/customGrayGreen"
         android:onClick="signIn"
+
         android:layout_marginTop="16dp"/>
 
 </LinearLayout>
