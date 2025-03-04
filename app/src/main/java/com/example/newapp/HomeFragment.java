@@ -1,9 +1,12 @@
 package com.example.newapp;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,12 +19,10 @@ import com.google.firebase.database.ValueEventListener;
 
 public class HomeFragment extends Fragment {
 
-    private TextView washingMachineTextView;
-    private TextView fridgeTextView;
-    private TextView heatingSystemTextView;
-    private TextView timestampTextView;
-
+    private ProgressBar energyProgressBar;
+    private TextView remainingEnergyText, washingMachineTextView, fridgeTextView, heatingSystemTextView;
     private DatabaseReference databaseReference;
+    private float estimatedKWh, remainingKWh;
 
     @Nullable
     @Override
@@ -30,12 +31,19 @@ public class HomeFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
+        energyProgressBar = view.findViewById(R.id.energy_progress_bar);
+        remainingEnergyText = view.findViewById(R.id.remaining_energy_text);
         washingMachineTextView = view.findViewById(R.id.text_washing_machine_reading);
         fridgeTextView = view.findViewById(R.id.text_fridge_reading);
         heatingSystemTextView = view.findViewById(R.id.text_heating_system_reading);
-        timestampTextView = view.findViewById(R.id.text_timestamp_reading); // Add a timestamp field
 
-        // Initialize Firebase Database Reference
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("UserPrefs", requireActivity().MODE_PRIVATE);
+        estimatedKWh = sharedPreferences.getFloat("ESTIMATED_KWH", 0);
+        remainingKWh = estimatedKWh;
+
+        energyProgressBar.setMax((int) estimatedKWh);
+        updateProgressBar(remainingKWh);
+
         databaseReference = FirebaseDatabase.getInstance("https://myapp2-75686-default-rtdb.firebaseio.com/")
                 .getReference("sensor_data");
 
@@ -45,47 +53,44 @@ public class HomeFragment extends Fragment {
     }
 
     private void fetchLatestDataFromFirebase() {
-        databaseReference.orderByKey().limitToLast(1) // Fetch the most recent entry
+        databaseReference.orderByKey().limitToLast(1)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         if (snapshot.exists()) {
-                            for (DataSnapshot data : snapshot.getChildren()) { // Loop in case of multiple entries
-                                Double washingMachineReading = data.child("washing_machine").getValue(Double.class);
-                                Double fridgeReading = data.child("fridge").getValue(Double.class);
-                                Double heatingSystemReading = data.child("heating_system").getValue(Double.class);
-                                String timestamp = data.child("timestamp").getValue(String.class);
+                            for (DataSnapshot data : snapshot.getChildren()) {
+                                double wmUsage = data.child("washing_machine").getValue(Double.class) != null ?
+                                        data.child("washing_machine").getValue(Double.class) : 0;
 
-                                // Update UI with real-time data
-                                washingMachineTextView.setText("Washing Machine: " +
-                                        (washingMachineReading != null ? String.format("%.2f", washingMachineReading) + " Watts" : "Not Connected"));
+                                double fridgeUsage = data.child("fridge").getValue(Double.class) != null ?
+                                        data.child("fridge").getValue(Double.class) : 0;
 
-                                fridgeTextView.setText("Fridge: " +
-                                        (fridgeReading != null ? String.format("%.2f", fridgeReading) + " Watts" : "Not Connected"));
+                                double heatingUsage = data.child("heating_system").getValue(Double.class) != null ?
+                                        data.child("heating_system").getValue(Double.class) : 0;
 
-                                heatingSystemTextView.setText("Heating System: " +
-                                        (heatingSystemReading != null ? String.format("%.2f", heatingSystemReading) + " Watts" : "Not Connected"));
+                                washingMachineTextView.setText("Washing Machine: " + String.format("%.2f", wmUsage) + " Watts");
+                                fridgeTextView.setText("Fridge: " + String.format("%.2f", fridgeUsage) + " Watts");
+                                heatingSystemTextView.setText("Heating System: " + String.format("%.2f", heatingUsage) + " Watts");
 
-                                timestampTextView.setText("Last Update: " + (timestamp != null ? timestamp : "N/A"));
+                                float totalUsageKWh = (float) ((wmUsage + fridgeUsage + heatingUsage) / 1000.0);
+                                remainingKWh = estimatedKWh - totalUsageKWh;
+                                if (remainingKWh < 0) remainingKWh = 0;
+
+                                updateProgressBar(remainingKWh);
                             }
-                        } else {
-                            // Devices are off or not connected
-                            washingMachineTextView.setText("Washing Machine: Not Connected");
-                            fridgeTextView.setText("Fridge: Not Connected");
-                            heatingSystemTextView.setText("Heating System: Not Connected");
-                            timestampTextView.setText("Last Update: No Data");
                         }
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
-                        washingMachineTextView.setText("Washing Machine: Error");
-                        fridgeTextView.setText("Fridge: Error");
-                        heatingSystemTextView.setText("Heating System: Error");
-                        timestampTextView.setText("Last Update: Error");
+                        Log.e("HomeFragment", "Error fetching data", error.toException());
                     }
                 });
     }
-}
 
+    private void updateProgressBar(float remainingKWh) {
+        energyProgressBar.setProgress((int) ((remainingKWh / estimatedKWh) * 100));
+        remainingEnergyText.setText("Remaining: " + String.format("%.2f", remainingKWh) + " kWh");
+    }
+}
 

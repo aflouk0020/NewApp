@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -11,41 +10,67 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Progress Bar Layout -->
+        <TextView
+            android:id="@+id/progress_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Remaining Energy (kWh)"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
+
+        <ProgressBar
+            android:id="@+id/energy_progress_bar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:max="100"
+            android:progress="100"
+            android:progressDrawable="@drawable/custom_progress_bar" />
+
+        <TextView
+            android:id="@+id/remaining_energy_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Remaining: 100 kWh"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginTop="8dp"/>
+
+        <!-- Device Readings -->
         <TextView
             android:id="@+id/text_washing_machine_reading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Washing Machine: 50.00 Watts"
-            android:textSize="20sp"
-            android:textStyle="bold"/>
+            android:text="Washing Machine: 0 Watts"
+            android:textSize="18sp"
+            android:layout_marginTop="16dp"/>
 
         <TextView
             android:id="@+id/text_fridge_reading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Fridge: 150.00 Watts"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp"/>
+            android:text="Fridge: 0 Watts"
+            android:textSize="18sp"
+            android:layout_marginTop="8dp"/>
 
         <TextView
             android:id="@+id/text_heating_system_reading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Heating System: 200.00 Watts"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginTop="16dp"/>
+            android:text="Heating System: 0 Watts"
+            android:textSize="18sp"
+            android:layout_marginTop="8dp"/>
 
-        <!-- ADD THIS MISSING TIMESTAMP TEXTVIEW -->
         <TextView
-            android:id="@+id/text_timestamp_reading"
+            android:id="@+id/text_last_updated"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Last Update: Not Available"
-            android:textSize="18sp"
+            android:text="Last Updated: --"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:layout_marginTop="16dp"/>
+            android:layout_marginTop="8dp"/>
 
     </LinearLayout>
 </ScrollView>
