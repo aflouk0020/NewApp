@@ -22,7 +22,7 @@ public class EnergyDetailsFragment extends Fragment {
 
     private static final String TAG = "EnergyDetailsFragment";
     private ProgressBar energyProgressBar;
-    private TextView remainingEnergyText, washingMachineTextView, fridgeTextView, heatingSystemTextView, lastUpdatedTextView, pointsTextView;
+    private TextView remainingEnergyText, usedEnergyText, washingMachineTextView, fridgeTextView, heatingSystemTextView, lastUpdatedTextView, pointsTextView;
     private DatabaseReference databaseReference;
     private float estimatedKWh, totalUsageKWh; // Track total usage for remaining energy
     private int points; // Track points
@@ -38,6 +38,7 @@ public class EnergyDetailsFragment extends Fragment {
         // Initialize views
         energyProgressBar = view.findViewById(R.id.energy_progress_bar);
         remainingEnergyText = view.findViewById(R.id.remaining_energy_text);
+        usedEnergyText = view.findViewById(R.id.used_energy_text); // New TextView for used energy
         washingMachineTextView = view.findViewById(R.id.text_washing_machine_reading);
         fridgeTextView = view.findViewById(R.id.text_fridge_reading);
         heatingSystemTextView = view.findViewById(R.id.text_heating_system_reading);
@@ -45,9 +46,9 @@ public class EnergyDetailsFragment extends Fragment {
         pointsTextView = view.findViewById(R.id.points_text);
 
         // Verify views are not null (debugging step)
-        if (energyProgressBar == null || remainingEnergyText == null || washingMachineTextView == null ||
-                fridgeTextView == null || heatingSystemTextView == null || lastUpdatedTextView == null ||
-                pointsTextView == null) {
+        if (energyProgressBar == null || remainingEnergyText == null || usedEnergyText == null ||
+                washingMachineTextView == null || fridgeTextView == null || heatingSystemTextView == null ||
+                lastUpdatedTextView == null || pointsTextView == null) {
             Log.e(TAG, "One or more views are null. Check fragment_energy_details.xml IDs.");
             return view; // Early return to avoid further crashes
         }
@@ -58,6 +59,7 @@ public class EnergyDetailsFragment extends Fragment {
         // Load estimated kWh and points from SharedPreferences
         estimatedKWh = sharedPreferences.getFloat("ESTIMATED_KWH", 0);
         points = sharedPreferences.getInt("POINTS", 0); // Initialize points to 0 if not set
+        Log.d(TAG, "Estimated KWh loaded from SharedPreferences: " + estimatedKWh);
 
         // Start ProgressBar empty (progress = 0) with gray color (handled by drawable)
         energyProgressBar.setMax(100);
@@ -65,6 +67,7 @@ public class EnergyDetailsFragment extends Fragment {
 
         // Set initial UI values
         remainingEnergyText.setText("Remaining: " + String.format("%.2f", estimatedKWh) + " kWh");
+        usedEnergyText.setText("Used: 0.00 kWh");
         washingMachineTextView.setText("Washing Machine: 0 Watts");
         fridgeTextView.setText("Fridge: 0 Watts");
         heatingSystemTextView.setText("Heating System: 0 Watts");
@@ -78,7 +81,7 @@ public class EnergyDetailsFragment extends Fragment {
         // Start Firebase listener for TextView updates
         fetchLatestDataFromFirebase();
 
-        // Start the test animation for the ProgressBar
+        // Start the test animation for the ProgressBar (comment out if using usage-based progress)
         startProgressBarTest();
 
         // Start the test animation for points (for demonstration)
@@ -117,13 +120,31 @@ public class EnergyDetailsFragment extends Fragment {
                                     Log.w(TAG, "Timestamp is null in snapshot");
                                 }
 
-                                // Calculate total usage in kWh
-                                totalUsageKWh = (float) ((wm + fridge + heating) / 1000.0);
+                                // Calculate total usage in kWh (adjust hoursOfUsage as needed)
+                                double hoursOfUsage = 1.0; // Assuming 1 hour for now; adjust based on your data
+                                totalUsageKWh = (float) (((wm + fridge + heating) / 1000.0) * hoursOfUsage);
+
+                                // Log for debugging
+                                Log.d(TAG, "Sensor Values - WM: " + wm + "W, Fridge: " + fridge + "W, Heating: " + heating + "W");
+                                Log.d(TAG, "Total Usage (kWh): " + totalUsageKWh + ", Estimated (kWh): " + estimatedKWh);
 
                                 // Calculate and display remaining energy
                                 float remainingKWh = estimatedKWh - totalUsageKWh;
                                 if (remainingKWh < 0) remainingKWh = 0;
+                                Log.d(TAG, "Remaining KWh: " + remainingKWh);
                                 remainingEnergyText.setText("Remaining: " + String.format("%.2f", remainingKWh) + " kWh");
+
+                                // Display the used energy
+                                usedEnergyText.setText("Used: " + String.format("%.2f", totalUsageKWh) + " kWh");
+
+                                // Optional: Tie progress bar to actual usage (comment out startProgressBarTest() if using this)
+                                /*
+                                if (estimatedKWh > 0) {
+                                    float usagePercentage = (totalUsageKWh / estimatedKWh) * 100;
+                                    energyProgressBar.setProgress((int) usagePercentage);
+                                    Log.d(TAG, "Usage Percentage: " + usagePercentage + "%");
+                                }
+                                */
                             }
                         } else {
                             Log.d(TAG, "No data found in snapshot");
@@ -132,6 +153,7 @@ public class EnergyDetailsFragment extends Fragment {
                             fridgeTextView.setText("Fridge: 0 Watts");
                             heatingSystemTextView.setText("Heating System: 0 Watts");
                             remainingEnergyText.setText("Remaining: " + String.format("%.2f", estimatedKWh) + " kWh");
+                            usedEnergyText.setText("Used: 0.00 kWh");
                             totalUsageKWh = 0;
                         }
                     }
@@ -144,6 +166,7 @@ public class EnergyDetailsFragment extends Fragment {
                         fridgeTextView.setText("Fridge: 0 Watts");
                         heatingSystemTextView.setText("Heating System: 0 Watts");
                         remainingEnergyText.setText("Remaining: " + String.format("%.2f", estimatedKWh) + " kWh");
+                        usedEnergyText.setText("Used: 0.00 kWh");
                     }
                 });
     }
