@@ -49,5 +49,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.firebaseui:firebase-ui-auth:8.0.2")
     implementation("com.google.firebase:firebase-database:20.3.0")
+//    implementation(platform("com.google.firebase:firebase-bom:33.11.0"))
     implementation ("com.google.firebase:firebase-storage:20.2.1")
+
 }

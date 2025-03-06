@@ -3,20 +3,30 @@ package com.example.newapp;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import android.widget.EditText;
-import android.widget.LinearLayout;
-import androidx.appcompat.app.AlertDialog;
+import com.google.firebase.database.*;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class HomeActivity extends AppCompatActivity {
+
+    private DatabaseReference databaseReference;
+    private TextView washingMachineTextView, fridgeTextView, heatingSystemTextView, lastUpdatedTextView, remainingEnergyText;
+    private ProgressBar energyProgressBar;  // ✅ Re-added progress bar
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +36,14 @@ public class HomeActivity extends AppCompatActivity {
         // Set up Toolbar
         androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        // Initialize UI elements
+        washingMachineTextView = findViewById(R.id.text_washing_machine_reading);
+        fridgeTextView = findViewById(R.id.text_fridge_reading);
+        heatingSystemTextView = findViewById(R.id.text_heating_system_reading);
+        lastUpdatedTextView = findViewById(R.id.text_last_updated);
+        remainingEnergyText = findViewById(R.id.remaining_energy_text);
+        energyProgressBar = findViewById(R.id.energy_progress_bar);  // ✅ Properly initialized
 
         // Bottom Navigation
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottom_navigation);
@@ -40,61 +58,99 @@ public class HomeActivity extends AppCompatActivity {
         // Get current user info from Firebase
         FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
         if (currentUser != null) {
-            String userEmail = currentUser.getEmail();  // Get logged-in user email
-
-            // Save email to SharedPreferences
+            String userEmail = currentUser.getEmail();
             SharedPreferences.Editor editor = getSharedPreferences("UserPrefs", MODE_PRIVATE).edit();
             editor.putString("USER_EMAIL", userEmail);
             editor.apply();
         }
 
-        // Check if the user has set household info
-        SharedPreferences sharedPreferences = getSharedPreferences("UserPrefs", MODE_PRIVATE);
-        boolean isFirstTime = sharedPreferences.getBoolean("FIRST_TIME", true);
-
-        if (isFirstTime) {
-            showHouseholdInputDialog(sharedPreferences);
-        }
+        // Firebase Database reference
+        databaseReference = FirebaseDatabase.getInstance().getReference("energy_usage");
+        fetchSensorData();  // Fetch sensor values from Firebase
     }
 
-    private void showHouseholdInputDialog(SharedPreferences sharedPreferences) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Household Information");
+    /**
+     * Fetch sensor readings and last updated timestamp from Firebase.
+     */
+    private void fetchSensorData() {
+        databaseReference.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.exists()) {
+                    Log.d("Firebase", "Data received: " + snapshot.getValue().toString());
 
-        // Layout for input fields
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
+                    Long washingMachineUsage = snapshot.child("washing_machine").getValue(Long.class);
+                    Long fridgeUsage = snapshot.child("fridge").getValue(Long.class);
+                    Long heatingSystemUsage = snapshot.child("heating_system").getValue(Long.class);
+                    Long lastUpdatedTimestamp = snapshot.child("last_updated").getValue(Long.class);
+                    Long remainingEnergy = snapshot.child("remaining_energy").getValue(Long.class);
 
-        final EditText familySizeInput = new EditText(this);
-        familySizeInput.setHint("Enter family size");
-        layout.addView(familySizeInput);
+                    // Log each value for debugging
+                    Log.d("Firebase", "Washing Machine: " + washingMachineUsage);
+                    Log.d("Firebase", "Fridge: " + fridgeUsage);
+                    Log.d("Firebase", "Heating System: " + heatingSystemUsage);
+                    Log.d("Firebase", "Remaining Energy: " + remainingEnergy);
+                    Log.d("Firebase", "Last Updated: " + lastUpdatedTimestamp);
 
-        final EditText roomNumberInput = new EditText(this);
-        roomNumberInput.setHint("Enter number of rooms");
-        layout.addView(roomNumberInput);
+                    // Update UI
+                    washingMachineTextView.setText("Washing Machine: " + (washingMachineUsage != null ? washingMachineUsage : 0) + " Watts");
+                    fridgeTextView.setText("Fridge: " + (fridgeUsage != null ? fridgeUsage : 0) + " Watts");
+                    heatingSystemTextView.setText("Heating System: " + (heatingSystemUsage != null ? heatingSystemUsage : 0) + " Watts");
 
-        builder.setView(layout);
+                    if (remainingEnergy != null) {
+                        energyProgressBar.setProgress(remainingEnergy.intValue());  // ✅ Fixed progress bar
+                        remainingEnergyText.setText("Remaining: " + remainingEnergy + " kWh");
+                    }
 
-        builder.setPositiveButton("Save", (dialog, which) -> {
-            try {
-                int familySize = Integer.parseInt(familySizeInput.getText().toString());
-                int roomNumber = Integer.parseInt(roomNumberInput.getText().toString());
+                    if (lastUpdatedTimestamp != null) {
+                        lastUpdatedTextView.setText("Last Updated: " + formatTimestamp(lastUpdatedTimestamp));
+                    } else {
+                        lastUpdatedTextView.setText("Last Updated: --");
+                    }
+                } else {
+                    Log.d("Firebase", "No data found in database.");
+                }
+            }
 
-                // Save to SharedPreferences
-                SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putInt("FAMILY_SIZE", familySize);
-                editor.putInt("ROOM_NUMBER", roomNumber);
-                editor.putBoolean("FIRST_TIME", false);
-                editor.apply();
-            } catch (NumberFormatException e) {
-                e.printStackTrace();
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("Firebase", "Error fetching data", error.toException());
             }
         });
-
-        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-        builder.setCancelable(false);
-        builder.show();
     }
+
+    /**
+     * Convert Firebase timestamp (milliseconds) to readable format.
+     */
+    private String formatTimestamp(long timestamp) {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        sdf.setTimeZone(TimeZone.getDefault());
+        return sdf.format(new Date(timestamp));
+    }
+
+    /**
+     * Handles Bottom Navigation clicks.
+     */
+    private final BottomNavigationView.OnItemSelectedListener navListener =
+            item -> {
+                Fragment selectedFragment = null;
+                int itemId = item.getItemId();
+
+                if (itemId == R.id.nav_home) {
+                    selectedFragment = new HomeFragment();
+                } else if (itemId == R.id.nav_assessment) {
+                    selectedFragment = new AssessmentFragment();
+                } else if (itemId == R.id.nav_profile) {
+                    selectedFragment = new ProfileFragment();
+                }
+
+                if (selectedFragment != null) {
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.fragment_container, selectedFragment)
+                            .commit();
+                }
+                return true;
+            };
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -119,26 +175,4 @@ public class HomeActivity extends AppCompatActivity {
         startActivity(intent);
         finish();
     }
-
-    private final BottomNavigationView.OnItemSelectedListener navListener =
-            item -> {
-                Fragment selectedFragment = null;
-                int itemId = item.getItemId();
-
-                if (itemId == R.id.nav_home) {
-                    selectedFragment = new HomeFragment();
-                } else if (itemId == R.id.nav_assessment) {
-                    selectedFragment = new AssessmentFragment();
-                } else if (itemId == R.id.nav_profile) {
-                    selectedFragment = new ProfileFragment();
-                }
-
-                if (selectedFragment != null) {
-                    getSupportFragmentManager().beginTransaction()
-                            .replace(R.id.fragment_container, selectedFragment)
-                            .commit();
-                }
-                return true;
-            };
 }
-

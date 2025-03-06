@@ -1,21 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- Background -->
+    <!-- Background (empty state, gray) -->
     <item android:id="@android:id/background">
-        <shape android:shape="rectangle">
-            <corners android:radius="10dp"/>
-            <solid android:color="#E0E0E0"/> <!-- Light gray background -->
+        <shape>
+            <corners android:radius="8dp" />
+            <gradient
+                android:startColor="#E0E0E0"
+                android:endColor="#E0E0E0"
+                android:angle="270" />
         </shape>
     </item>
 
-    <!-- Progress Fill -->
+    <!-- Progress (dynamic color: gray → green → orange → red based on progress) -->
     <item android:id="@android:id/progress">
         <clip>
-            <shape android:shape="rectangle">
-                <corners android:radius="10dp"/>
-                <solid android:color="#4CAF50"/> <!-- Green progress fill -->
+            <shape>
+                <corners android:radius="8dp" />
+                <gradient
+                    android:startColor="#B0B0B0"
+                android:centerColor="#4CAF50"
+                android:endColor="#F44336"
+                android:type="linear"
+                android:angle="270" />
             </shape>
         </clip>
     </item>
-
 </layer-list>

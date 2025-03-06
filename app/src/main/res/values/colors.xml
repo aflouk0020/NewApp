@@ -10,4 +10,12 @@
     <color name="buttonText">#FFFFFF</color>
     <color name="customGrayGreen">#828f85</color>
     <color name="darkGray">#727a74</color>
+
+
+
+        <color name="gray_progress">#B0B0B0</color>   <!-- Gray for 0%–25% -->
+        <color name="green_progress">#4CAF50</color>  <!-- Green for 25%–50% -->
+        <color name="orange_progress">#FF9800</color> <!-- Orange for 50%–75% -->
+        <color name="red_progress">#F44336</color>    <!-- Red for 75%–100% -->
+
 </resources>
