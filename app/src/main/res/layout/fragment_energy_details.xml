@@ -27,7 +27,6 @@
                 android:padding="20dp"
                 android:gravity="center_horizontal">
 
-                <!-- Progress Bar Label -->
                 <TextView
                     android:id="@+id/progress_label"
                     android:layout_width="wrap_content"
@@ -38,7 +37,6 @@
                     android:textColor="@color/black"
                     android:layout_marginBottom="8dp"/>
 
-                <!-- Progress Bar -->
                 <ProgressBar
                     android:id="@+id/energy_progress_bar"
                     style="?android:attr/progressBarStyleHorizontal"
@@ -48,7 +46,6 @@
                     android:progress="0"
                     android:progressDrawable="@drawable/custom_progress_bar" />
 
-                <!-- Remaining Energy -->
                 <TextView
                     android:id="@+id/remaining_energy_text"
                     android:layout_width="wrap_content"
@@ -59,7 +56,6 @@
                     android:textColor="@color/black"
                     android:layout_marginTop="8dp"/>
 
-                <!-- Used Energy -->
                 <TextView
                     android:id="@+id/used_energy_text"
                     android:layout_width="wrap_content"
@@ -87,7 +83,6 @@
                 android:padding="20dp"
                 android:gravity="center_horizontal">
 
-                <!-- Device Readings Header -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -97,7 +92,6 @@
                     android:textColor="@color/black"
                     android:layout_marginBottom="8dp"/>
 
-                <!-- Washing Machine -->
                 <TextView
                     android:id="@+id/text_washing_machine_reading"
                     android:layout_width="wrap_content"
@@ -107,7 +101,6 @@
                     android:textColor="@color/black"
                     android:layout_marginTop="8dp"/>
 
-                <!-- Fridge -->
                 <TextView
                     android:id="@+id/text_fridge_reading"
                     android:layout_width="wrap_content"
@@ -117,7 +110,6 @@
                     android:textColor="@color/black"
                     android:layout_marginTop="8dp"/>
 
-                <!-- Heating System -->
                 <TextView
                     android:id="@+id/text_heating_system_reading"
                     android:layout_width="wrap_content"
@@ -127,9 +119,71 @@
                     android:textColor="@color/black"
                     android:layout_marginTop="8dp"/>
 
-                <!-- Last Updated -->
                 <TextView
                     android:id="@+id/text_last_updated"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Last Updated: --"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="12dp"/>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Totals Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="6dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Totals"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginBottom="8dp"/>
+
+                <TextView
+                    android:id="@+id/text_total_washing_machine"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Washing Machine: 0 Watts"
+                    android:textSize="16sp"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"/>
+
+                <TextView
+                    android:id="@+id/text_total_fridge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Fridge: 0 Watts"
+                    android:textSize="16sp"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"/>
+
+                <TextView
+                    android:id="@+id/text_total_heating_system"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Total Heating System: 0 Watts"
+                    android:textSize="16sp"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"/>
+
+                <TextView
+                    android:id="@+id/text_totals_timestamp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Last Updated: --"
@@ -155,7 +209,6 @@
                 android:padding="20dp"
                 android:gravity="center_horizontal">
 
-                <!-- Points Header -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -165,7 +218,6 @@
                     android:textColor="@color/black"
                     android:layout_marginBottom="8dp"/>
 
-                <!-- Points Display -->
                 <TextView
                     android:id="@+id/points_text"
                     android:layout_width="wrap_content"

@@ -1,3 +1,4 @@
+
 package com.example.newapp;
 
 import androidx.appcompat.app.AlertDialog;
@@ -17,6 +18,10 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import org.json.JSONObject;
+import java.nio.charset.StandardCharsets;
 
 public class ProfileFragment extends Fragment {
 
@@ -28,7 +33,7 @@ public class ProfileFragment extends Fragment {
     private ImageView infoIcon;
     private FirebaseUser currentUser;
     private boolean isEditing = false;
-    private int points; // Track points
+    private int points;
 
     @Nullable
     @Override
@@ -51,15 +56,11 @@ public class ProfileFragment extends Fragment {
         setEditingEnabled(false);
         loadUserData();
 
-        // Listen for changes to points in SharedPreferences
-        sharedPreferences.registerOnSharedPreferenceChangeListener(new SharedPreferences.OnSharedPreferenceChangeListener() {
-            @Override
-            public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-                if (key.equals("POINTS")) {
-                    points = sharedPreferences.getInt("POINTS", 0);
-                    pointsTextView.setText("Points: " + points);
-                    Log.d(TAG, "Points updated in ProfileFragment: " + points);
-                }
+        // Listen for changes to points and update Firebase
+        sharedPreferences.registerOnSharedPreferenceChangeListener((sharedPreferences, key) -> {
+            if (key.equals("POINTS")) {
+                int updatedPoints = sharedPreferences.getInt("POINTS", 0);
+                updatePointsInFirebase(updatedPoints);
             }
         });
 
@@ -68,9 +69,39 @@ public class ProfileFragment extends Fragment {
 
         return view;
     }
+    private void updatePointsInFirebase(int newPoints) {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            Log.e(TAG, "No authenticated user found.");
+            return;
+        }
+
+        String userId = user.getUid();
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference()
+                .child("users/" + userId + "/household.json");
+
+        // Retrieve existing user data, update points, and re-upload JSON
+        storageRef.getBytes(1024 * 1024)
+                .addOnSuccessListener(bytes -> {
+                    try {
+                        String json = new String(bytes, StandardCharsets.UTF_8);
+                        JSONObject jsonObject = new JSONObject(json);
+
+                        jsonObject.put("points", newPoints); // Update points value
+
+                        byte[] updatedData = jsonObject.toString().getBytes(StandardCharsets.UTF_8);
+                        storageRef.putBytes(updatedData)
+                                .addOnSuccessListener(taskSnapshot -> Log.d(TAG, "Points updated in Firebase Storage"))
+                                .addOnFailureListener(e -> Log.e(TAG, "Failed to update points in Firebase Storage", e));
+
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error updating points in JSON", e);
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to fetch household.json for updating points", e));
+    }
 
     private void showRules() {
-        // Display an alert dialog with the app rules
         new AlertDialog.Builder(requireContext())
                 .setTitle("Energy Usage Guidelines")
                 .setMessage("1. Reduce unnecessary power usage.\n" +
@@ -80,29 +111,6 @@ public class ProfileFragment extends Fragment {
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
                 .show();
     }
-
-    private void loadUserData() {
-        String email = sharedPreferences.getString("USER_EMAIL", "Guest");
-        int familySize = sharedPreferences.getInt("FAMILY_SIZE", 0);
-        int roomNumber = sharedPreferences.getInt("ROOM_NUMBER", 0);
-        points = sharedPreferences.getInt("POINTS", 0); // Load points
-
-        usernameTextView.setText("User Email: " + email);
-        familySizeEditText.setText(String.valueOf(familySize));
-        roomNumberEditText.setText(String.valueOf(roomNumber));
-        pointsTextView.setText("Points: " + points);
-
-        String energyUsageCategory = calculateEnergyUsage(roomNumber, familySize);
-        double kWhPerMonth = calculateKWhPerMonth(roomNumber, familySize);
-
-        energyUsageTextView.setText("Energy Usage: " + energyUsageCategory);
-        kWhTextView.setText("Estimated Monthly kWh: " + kWhPerMonth + " kWh");
-
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putFloat("ESTIMATED_KWH", (float) kWhPerMonth);
-        editor.apply();
-    }
-
     private String calculateEnergyUsage(int rooms, int familySize) {
         if (rooms <= 2) return (familySize <= 3) ? "Low" : (familySize <= 5) ? "Slightly Higher Baseline" : "Higher Baseline";
         if (rooms <= 4) return (familySize <= 3) ? "Medium" : (familySize <= 5) ? "Medium-High" : "High";
@@ -111,6 +119,53 @@ public class ProfileFragment extends Fragment {
 
     private double calculateKWhPerMonth(int rooms, int familySize) {
         return (rooms * 80) + (familySize * 20);
+    }
+
+
+    private void loadUserData() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            Log.e(TAG, "No authenticated user found.");
+            return;
+        }
+
+        String userId = user.getUid();
+        StorageReference storageRef = FirebaseStorage.getInstance().getReference()
+                .child("users/" + userId + "/household.json");
+
+        storageRef.getBytes(1024 * 1024)
+                .addOnSuccessListener(bytes -> {
+                    try {
+                        String json = new String(bytes, StandardCharsets.UTF_8);
+                        JSONObject jsonObject = new JSONObject(json);
+
+                        String email = jsonObject.optString("email", "Guest");
+                        int familySize = jsonObject.optInt("family_size", 0);
+                        int roomNumber = jsonObject.optInt("room_number", 0);
+                        String energyUsage = jsonObject.optString("energy_usage", "Unknown");
+                        double kWhPerMonth = jsonObject.optDouble("monthly_kWh", 0);
+                        points = jsonObject.optInt("points", 0);
+
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putString("USER_EMAIL", email);
+                        editor.putInt("FAMILY_SIZE", familySize);
+                        editor.putInt("ROOM_NUMBER", roomNumber);
+                        editor.putFloat("ESTIMATED_KWH", (float) kWhPerMonth);
+                        editor.putInt("POINTS", points);
+                        editor.apply();
+
+                        usernameTextView.setText("User Email: " + email);
+                        familySizeEditText.setText(String.valueOf(familySize));
+                        roomNumberEditText.setText(String.valueOf(roomNumber));
+                        energyUsageTextView.setText("Energy Usage: " + energyUsage);
+                        kWhTextView.setText("Estimated Monthly kWh: " + kWhPerMonth + " kWh");
+                        pointsTextView.setText("Points: " + points);
+
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing household.json", e);
+                    }
+                })
+                .addOnFailureListener(e -> Log.e(TAG, "Failed to fetch household.json", e));
     }
 
     private void toggleEditing() {
@@ -131,36 +186,57 @@ public class ProfileFragment extends Fragment {
     }
 
     private void saveUserData() {
-        // Get user input from EditText fields
         String familySizeStr = familySizeEditText.getText().toString();
         String roomNumberStr = roomNumberEditText.getText().toString();
 
-        if (familySizeStr.isEmpty() || roomNumberStr.isEmpty()) {
+        if (familySizeStr.isEmpty() || roomNumberStr.isEmpty() || familySizeStr.equals("Loading...") || roomNumberStr.equals("Loading...")) {
             Toast.makeText(requireContext(), "Please enter valid numbers", Toast.LENGTH_SHORT).show();
             return;
         }
 
         int familySize = Integer.parseInt(familySizeStr);
         int roomNumber = Integer.parseInt(roomNumberStr);
-
-        // Save to SharedPreferences
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putInt("FAMILY_SIZE", familySize);
-        editor.putInt("ROOM_NUMBER", roomNumber);
-        editor.apply();
-
-        // Recalculate energy usage
         String energyUsageCategory = calculateEnergyUsage(roomNumber, familySize);
         double kWhPerMonth = calculateKWhPerMonth(roomNumber, familySize);
 
-        // Update UI
-        energyUsageTextView.setText("Energy Usage: " + energyUsageCategory);
-        kWhTextView.setText("Estimated Monthly kWh: " + kWhPerMonth + " kWh");
+        points = sharedPreferences.getInt("POINTS", 0);
 
-        // Save estimated kWh in SharedPreferences
-        editor.putFloat("ESTIMATED_KWH", (float) kWhPerMonth);
-        editor.apply();
+        JSONObject userData = new JSONObject();
+        try {
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            if (user == null) return;
 
-        Toast.makeText(requireContext(), "User data saved successfully", Toast.LENGTH_SHORT).show();
+            String userId = user.getUid();
+            userData.put("email", user.getEmail());
+            userData.put("family_size", familySize);
+            userData.put("room_number", roomNumber);
+            userData.put("energy_usage", energyUsageCategory);
+            userData.put("monthly_kWh", kWhPerMonth);
+            userData.put("points", points);
+
+            byte[] data = userData.toString().getBytes(StandardCharsets.UTF_8);
+            StorageReference storageRef = FirebaseStorage.getInstance().getReference()
+                    .child("users/" + userId + "/household.json");
+
+            storageRef.putBytes(data)
+                    .addOnSuccessListener(taskSnapshot -> {
+                        SharedPreferences.Editor editor = sharedPreferences.edit();
+                        editor.putInt("FAMILY_SIZE", familySize);
+                        editor.putInt("ROOM_NUMBER", roomNumber);
+                        editor.putFloat("ESTIMATED_KWH", (float) kWhPerMonth);
+                        editor.putInt("POINTS", points);
+                        editor.apply();
+
+                        energyUsageTextView.setText("Energy Usage: " + energyUsageCategory);
+                        kWhTextView.setText("Estimated Monthly kWh: " + kWhPerMonth + " kWh");
+                        pointsTextView.setText("Points: " + points);
+
+                        Toast.makeText(requireContext(), "User data saved successfully", Toast.LENGTH_SHORT).show();
+                    })
+                    .addOnFailureListener(e -> Log.e(TAG, "Failed to upload household.json", e));
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating JSON for household.json", e);
+        }
     }
 }
