@@ -1,8 +1,9 @@
-
 package com.example.newapp;
 
 import androidx.appcompat.app.AlertDialog;
+
 import android.content.SharedPreferences;
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -13,14 +14,18 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+
 import org.json.JSONObject;
+
 import java.nio.charset.StandardCharsets;
 
 public class ProfileFragment extends Fragment {
@@ -69,6 +74,7 @@ public class ProfileFragment extends Fragment {
 
         return view;
     }
+
     private void updatePointsInFirebase(int newPoints) {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
@@ -111,16 +117,18 @@ public class ProfileFragment extends Fragment {
                 .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
                 .show();
     }
+
     private String calculateEnergyUsage(int rooms, int familySize) {
-        if (rooms <= 2) return (familySize <= 3) ? "Low" : (familySize <= 5) ? "Slightly Higher Baseline" : "Higher Baseline";
-        if (rooms <= 4) return (familySize <= 3) ? "Medium" : (familySize <= 5) ? "Medium-High" : "High";
+        if (rooms <= 2)
+            return (familySize <= 3) ? "Low" : (familySize <= 5) ? "Slightly Higher Baseline" : "Higher Baseline";
+        if (rooms <= 4)
+            return (familySize <= 3) ? "Medium" : (familySize <= 5) ? "Medium-High" : "High";
         return (familySize <= 3) ? "High" : (familySize <= 5) ? "High" : "Very High";
     }
 
     private double calculateKWhPerMonth(int rooms, int familySize) {
         return (rooms * 80) + (familySize * 20);
     }
-
 
     private void loadUserData() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -140,6 +148,8 @@ public class ProfileFragment extends Fragment {
                         JSONObject jsonObject = new JSONObject(json);
 
                         String email = jsonObject.optString("email", "Guest");
+                        Log.d(TAG, "Email from JSON: " + email);
+
                         int familySize = jsonObject.optInt("family_size", 0);
                         int roomNumber = jsonObject.optInt("room_number", 0);
                         String energyUsage = jsonObject.optString("energy_usage", "Unknown");
@@ -185,6 +195,10 @@ public class ProfileFragment extends Fragment {
         roomNumberEditText.setEnabled(enabled);
     }
 
+
+
+
+
     private void saveUserData() {
         String familySizeStr = familySizeEditText.getText().toString();
         String roomNumberStr = roomNumberEditText.getText().toString();
@@ -198,14 +212,12 @@ public class ProfileFragment extends Fragment {
         int roomNumber = Integer.parseInt(roomNumberStr);
         String energyUsageCategory = calculateEnergyUsage(roomNumber, familySize);
         double kWhPerMonth = calculateKWhPerMonth(roomNumber, familySize);
-
         points = sharedPreferences.getInt("POINTS", 0);
 
         JSONObject userData = new JSONObject();
         try {
             FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
             if (user == null) return;
-
             String userId = user.getUid();
             userData.put("email", user.getEmail());
             userData.put("family_size", familySize);
@@ -220,11 +232,16 @@ public class ProfileFragment extends Fragment {
 
             storageRef.putBytes(data)
                     .addOnSuccessListener(taskSnapshot -> {
+                        if (!isAdded()) {
+                            return;
+                        }
                         SharedPreferences.Editor editor = sharedPreferences.edit();
                         editor.putInt("FAMILY_SIZE", familySize);
                         editor.putInt("ROOM_NUMBER", roomNumber);
                         editor.putFloat("ESTIMATED_KWH", (float) kWhPerMonth);
                         editor.putInt("POINTS", points);
+                        // Mark profile as complete.
+                        editor.putBoolean("PROFILE_COMPLETE", true);
                         editor.apply();
 
                         energyUsageTextView.setText("Energy Usage: " + energyUsageCategory);
@@ -234,9 +251,9 @@ public class ProfileFragment extends Fragment {
                         Toast.makeText(requireContext(), "User data saved successfully", Toast.LENGTH_SHORT).show();
                     })
                     .addOnFailureListener(e -> Log.e(TAG, "Failed to upload household.json", e));
-
         } catch (Exception e) {
             Log.e(TAG, "Error creating JSON for household.json", e);
         }
     }
+
 }

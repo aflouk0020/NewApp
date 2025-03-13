@@ -65,7 +65,48 @@
                     android:textStyle="bold"
                     android:textColor="@color/black"
                     android:layout_marginTop="4dp"/>
+
+                <!-- NEW TextView to show the monthly estimate -->
+                <TextView
+                    android:id="@+id/estimated_monthly_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Estimated Monthly: 0.00 kWh"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="4dp"/>
             </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Device Readings Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="6dp">
+            <!-- ...unchanged... -->
+        </androidx.cardview.widget.CardView>
+
+        <!-- Totals Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="6dp">
+            <!-- ...unchanged... -->
+        </androidx.cardview.widget.CardView>
+
+        <!-- Points Card -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="6dp">
+            <!-- ...unchanged... -->
         </androidx.cardview.widget.CardView>
 
         <!-- Device Readings Card -->
