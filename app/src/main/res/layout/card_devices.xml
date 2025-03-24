@@ -7,9 +7,10 @@
     android:layout_marginBottom="16dp"
     android:clickable="true"
     android:focusable="true"
+
     app:cardCornerRadius="16dp"
     app:cardElevation="8dp"
-    app:cardBackgroundColor="@color/white">
+    app:cardBackgroundColor="@color/cradViewColor">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -21,6 +22,7 @@
         <!-- Header -->
         <TextView
             android:id="@+id/header_devices"
+            android:fontFamily="@font/normal"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Device Readings ▼"
@@ -40,6 +42,7 @@
             android:gravity="center_horizontal">
 
             <TextView
+                android:fontFamily="@font/normal"
                 android:id="@+id/text_washing_machine_reading"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -55,6 +58,7 @@
                 android:layout_height="wrap_content"
                 android:text="Fridge: 0 Watts"
                 android:textSize="16sp"
+                android:fontFamily="@font/normal"
                 android:textColor="@color/black"
                 android:layout_marginTop="8dp"
                 android:gravity="center" />
@@ -65,6 +69,7 @@
                 android:layout_height="wrap_content"
                 android:text="Heating System: 0 Watts"
                 android:textSize="16sp"
+                android:fontFamily="@font/normal"
                 android:textColor="@color/black"
                 android:layout_marginTop="8dp"
                 android:gravity="center" />
@@ -76,6 +81,7 @@
                 android:text="Last Updated: --"
                 android:textSize="16sp"
                 android:textStyle="bold"
+                android:fontFamily="@font/normal"
                 android:textColor="@color/black"
                 android:layout_marginTop="12dp"
                 android:gravity="center" />

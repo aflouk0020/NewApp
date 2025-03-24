@@ -19,7 +19,7 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/white">
+            app:cardBackgroundColor="@color/cradViewColor">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -36,6 +36,7 @@
                     android:text="User ID: Loading..."
                     android:textSize="18sp"
                     android:textStyle="bold"
+                    android:fontFamily="@font/normal"
                     android:textColor="@color/black"
                     android:gravity="center"
                     android:layout_marginBottom="8dp"/>
@@ -52,6 +53,7 @@
                         android:layout_height="wrap_content"
                         android:text="Check Rules"
                         android:textSize="16sp"
+                        android:fontFamily="@font/normal"
                         android:textStyle="bold"
                         android:textColor="@color/black"
                         android:layout_marginEnd="8dp"/>
@@ -73,6 +75,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Points: 0"
+                    android:fontFamily="@font/normal"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/black"
@@ -87,7 +90,8 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/white">
+
+            app:cardBackgroundColor="@color/cradViewColor">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -101,6 +105,7 @@
                     android:layout_height="wrap_content"
                     android:text="Family Size"
                     android:textSize="16sp"
+                    android:fontFamily="@font/normal"
                     android:textStyle="bold"
                     android:textColor="@color/black"
                     android:layout_marginBottom="4dp"/>
@@ -112,6 +117,7 @@
                     android:text="Loading..."
                     android:enabled="false"
                     android:textSize="16sp"
+                    android:fontFamily="@font/normal"
                     android:textStyle="bold"
                     android:textColor="@color/black"
                     android:background="@drawable/edit_text_bg"
@@ -122,6 +128,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Number of Rooms"
+                    android:fontFamily="@font/normal"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/black"
@@ -132,6 +139,7 @@
                     android:id="@+id/room_number_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:fontFamily="@font/normal"
                     android:text="Loading..."
                     android:enabled="false"
                     android:textSize="16sp"
@@ -145,6 +153,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Energy Usage"
+                    android:fontFamily="@font/normal"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/black"
@@ -158,6 +167,7 @@
                     android:text="Calculating..."
                     android:enabled="false"
                     android:textStyle="bold"
+                    android:fontFamily="@font/normal"
                     android:textColor="@color/black"
                     android:textSize="16sp"
                     android:background="@drawable/edit_text_bg"
@@ -170,6 +180,7 @@
                     android:text="Estimated Monthly kWh"
                     android:textSize="16sp"
                     android:textStyle="bold"
+                    android:fontFamily="@font/normal"
                     android:textColor="@color/black"
                     android:layout_marginTop="12dp"
                     android:layout_marginBottom="4dp"/>
@@ -180,6 +191,7 @@
                     android:layout_height="wrap_content"
                     android:text="Loading..."
                     android:enabled="false"
+                    android:fontFamily="@font/normal"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/black"
@@ -195,6 +207,7 @@
             android:layout_height="wrap_content"
             android:text="Edit Household Info"
             android:textSize="16sp"
+            android:fontFamily="@font/normal"
             android:textStyle="bold"
             android:backgroundTint="@color/customGrayGreen"
             android:padding="12dp"

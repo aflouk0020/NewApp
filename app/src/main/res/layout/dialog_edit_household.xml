@@ -8,11 +8,13 @@
         android:id="@+id/edit_family_size"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:fontFamily="@font/normal"
         android:hint="Enter family size" />
 
     <EditText
         android:id="@+id/edit_room_number"
         android:layout_width="match_parent"
+        android:fontFamily="@font/normal"
         android:layout_height="wrap_content"
         android:hint="Enter number of rooms" />
 </LinearLayout>

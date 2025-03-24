@@ -9,7 +9,7 @@
     android:focusable="true"
     app:cardCornerRadius="20dp"
     app:cardElevation="10dp"
-    app:cardBackgroundColor="@color/white">
+    app:cardBackgroundColor="@color/cradViewColor">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -25,6 +25,7 @@
             android:text="Remaining Energy (kWh) ▼"
             android:textSize="18sp"
             android:textStyle="bold"
+            android:fontFamily="@font/normal"
             android:textColor="@color/black"
             android:gravity="center"
             android:paddingBottom="8dp" />
@@ -52,6 +53,7 @@
                 android:layout_height="wrap_content"
                 android:text="Remaining: 0 kWh"
                 android:textSize="16sp"
+                android:fontFamily="@font/normal"
                 android:textStyle="bold"
                 android:textColor="@color/black"
                 android:layout_marginTop="8dp"
@@ -64,6 +66,7 @@
                 android:text="Estimated Monthly: 0.00 kWh"
                 android:textSize="16sp"
                 android:textStyle="bold"
+                android:fontFamily="@font/normal"
                 android:textColor="@color/black"
                 android:layout_marginTop="4dp"
                 android:gravity="center" />
@@ -75,6 +78,7 @@
                 android:text="Estimated Daily: 0.00 kWh"
                 android:textSize="16sp"
                 android:textStyle="bold"
+                android:fontFamily="@font/normal"
                 android:textColor="@color/black"
                 android:layout_marginTop="4dp"
                 android:gravity="center" />

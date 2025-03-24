@@ -7,28 +7,28 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="16dp"
-    android:background="@drawable/background_img"
-    tools:context=".MainActivity">
 
+    tools:context=".MainActivity">
 
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingBottom="20dp"
         android:text="Welcome to Ener-Joy"
         android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:paddingBottom="20dp"/>
+        android:fontFamily="@font/normal"
+        android:textStyle="bold" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/but_sign_in"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Sign in with Google or Email"
-        app:backgroundTint="@color/customGrayGreen"
+        android:layout_marginTop="16dp"
+        android:fontFamily="@font/normal"
         android:onClick="signIn"
-
-        android:layout_marginTop="16dp"/>
+        android:text="Sign in with Google or Email"
+        app:backgroundTint="@color/customGrayGreen" />
 
 </LinearLayout>
