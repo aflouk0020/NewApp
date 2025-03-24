@@ -42,7 +42,17 @@ public class HomeActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
-
+        if (getIntent() != null && "requests".equals(getIntent().getStringExtra("openFragment"))) {
+            // open RequestsFragment
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, new RequestsFragment()) // make sure container ID matches
+                    .commit();
+        } else {
+            // default fragment
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.fragment_container, new HomeFragment())
+                    .commit();
+        }
         // Set up Toolbar
         androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -189,6 +199,11 @@ public class HomeActivity extends AppCompatActivity {
         databaseReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
+
+
+
+
+
                 if (snapshot.exists()) {
                     Log.d("Firebase", "Data received: " + snapshot.getValue().toString());
 

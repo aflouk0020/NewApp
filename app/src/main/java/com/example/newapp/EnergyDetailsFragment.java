@@ -11,12 +11,6 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -32,19 +26,24 @@ import com.google.firebase.storage.StorageReference;
 import org.json.JSONObject;
 
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 public class EnergyDetailsFragment extends Fragment {
 
     private static final String TAG = "EnergyDetailsFragment";
-    // This totalsFilePath will be built dynamically in onCreateView using the user's email.
     private String totalsFilePath;
 
     private ProgressBar energyProgressBar;
-    private TextView remainingEnergyText, usedEnergyText;
+    private TextView remainingEnergyText;
     private TextView washingMachineTextView, fridgeTextView, heatingSystemTextView;
-    private TextView lastUpdatedTextView, pointsTextView;
+    private TextView lastUpdatedTextView, pointsTextView, pointsChangeTextView;
     private TextView textTotalWashingMachine, textTotalFridge, textTotalHeatingSystem, textTotalsTimestamp;
-    private TextView estimatedMonthlyText;
+    private TextView estimatedMonthlyText, estimatedDailyText, totalUsageText;
 
     private DatabaseReference databaseReference;
     private SharedPreferences sharedPreferences;
@@ -52,28 +51,26 @@ public class EnergyDetailsFragment extends Fragment {
     private float estimatedKWh;
     private int points;
 
-    private Handler totalsUpdateHandler = new Handler();
-    private Runnable totalsUpdateRunnable = new Runnable() {
-        @Override
-        public void run() {
-            if (getView() != null) {
-                fetchAggregatedTotals(getView());
-            }
-            // Schedule next update after 15 seconds.
-            totalsUpdateHandler.postDelayed(this, 15000);
+    private final Handler totalsUpdateHandler = new Handler();
+    private final Runnable totalsUpdateRunnable = () -> {
+        if (getView() != null) {
+            fetchAggregatedTotals(getView());
         }
+        totalsUpdateHandler.postDelayed(this.totalsUpdateRunnable, 15000);
     };
 
-    // Listener to update estimated monthly kWh if it changes in SharedPreferences.
-    private SharedPreferences.OnSharedPreferenceChangeListener prefsListener =
-            new SharedPreferences.OnSharedPreferenceChangeListener() {
-                @Override
-                public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-                    if (key.equals("ESTIMATED_KWH")) {
-                        estimatedKWh = sharedPreferences.getFloat("ESTIMATED_KWH", 0);
-                        if (estimatedMonthlyText != null) {
-                            estimatedMonthlyText.setText("Estimated Monthly: " +
-                                    String.format("%.2f", estimatedKWh) + " kWh");
+    private final SharedPreferences.OnSharedPreferenceChangeListener prefsListener =
+            (sharedPreferences, key) -> {
+                if (key.equals("ESTIMATED_KWH")) {
+                    estimatedKWh = sharedPreferences.getFloat("ESTIMATED_KWH", 0);
+                    if (estimatedMonthlyText != null) {
+                        estimatedMonthlyText.setText("Estimated Monthly: " +
+                                String.format("%.2f", estimatedKWh) + " kWh");
+
+                        int daysInMonth = Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH);
+                        double estimatedDailyUsage = estimatedKWh / daysInMonth;
+                        if (estimatedDailyText != null) {
+                            estimatedDailyText.setText(String.format("Estimated Daily: %.2f kWh", estimatedDailyUsage));
                         }
                     }
                 }
@@ -87,46 +84,41 @@ public class EnergyDetailsFragment extends Fragment {
 
         View view = inflater.inflate(R.layout.fragment_energy_details, container, false);
 
-        // Initialize SharedPreferences and retrieve the user email.
         sharedPreferences = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
         String userEmail = sharedPreferences.getString("USER_EMAIL", "default@gmail.com");
-        Log.d(TAG, "EnergyDetailsFragment - userEmail from SharedPrefs: " + userEmail);
         totalsFilePath = "totals/" + userEmail + "/totals.json";
-        Log.d(TAG, "EnergyDetailsFragment - totalsFilePath: " + totalsFilePath);
 
-        // Initialize Totals Card UI elements.
         textTotalWashingMachine = view.findViewById(R.id.text_total_washing_machine);
         textTotalFridge = view.findViewById(R.id.text_total_fridge);
         textTotalHeatingSystem = view.findViewById(R.id.text_total_heating_system);
-
-        // Initialize other UI elements.
+        textTotalsTimestamp = view.findViewById(R.id.text_totals_timestamp);
+        totalUsageText = view.findViewById(R.id.text_total_usage);
         energyProgressBar = view.findViewById(R.id.energy_progress_bar);
         remainingEnergyText = view.findViewById(R.id.remaining_energy_text);
-        usedEnergyText = view.findViewById(R.id.used_energy_text);
         washingMachineTextView = view.findViewById(R.id.text_washing_machine_reading);
         fridgeTextView = view.findViewById(R.id.text_fridge_reading);
         heatingSystemTextView = view.findViewById(R.id.text_heating_system_reading);
         lastUpdatedTextView = view.findViewById(R.id.text_last_updated);
         pointsTextView = view.findViewById(R.id.points_text);
         estimatedMonthlyText = view.findViewById(R.id.estimated_monthly_text);
+        estimatedDailyText = view.findViewById(R.id.estimated_daily_text);
+        pointsChangeTextView = view.findViewById(R.id.text_points_change);
 
-        // Fetch aggregated totals from Firebase Storage using the dynamically built totalsFilePath.
-        fetchAggregatedTotals(view);
-
-        // Register SharedPreferences listener.
-        sharedPreferences.registerOnSharedPreferenceChangeListener(prefsListener);
-        // Load current values.
         estimatedKWh = sharedPreferences.getFloat("ESTIMATED_KWH", 0);
         points = sharedPreferences.getInt("POINTS", 0);
 
-        // Initialize UI with default values.
         updateInitialUI();
 
-        // Set the monthly estimate immediately.
         estimatedMonthlyText.setText("Estimated Monthly: " +
                 String.format("%.2f", estimatedKWh) + " kWh");
 
-        // Fetch real-time sensor data from Firebase Database.
+        int daysInMonth = Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH);
+        double estimatedDailyUsage = estimatedKWh / daysInMonth;
+        estimatedDailyText.setText(String.format("Estimated Daily: %.2f kWh", estimatedDailyUsage));
+
+        sharedPreferences.registerOnSharedPreferenceChangeListener(prefsListener);
+
+        fetchAggregatedTotals(view);
         fetchLatestDataFromFirebase();
 
         return view;
@@ -155,15 +147,12 @@ public class EnergyDetailsFragment extends Fragment {
     private void updateInitialUI() {
         energyProgressBar.setMax(100);
         energyProgressBar.setProgress(0);
-        // Set default fixed values.
-        remainingEnergyText.setText("Remaining: 0.00 kWh");
-        usedEnergyText.setText("Used: 0.00 kWh");
-
         washingMachineTextView.setText("Washing Machine: 0 Watts");
         fridgeTextView.setText("Fridge: 0 Watts");
         heatingSystemTextView.setText("Heating System: 0 Watts");
         lastUpdatedTextView.setText("Last Updated: --");
         pointsTextView.setText("Points: " + points);
+        totalUsageText.setText("Total Usage: 0.00 Watts");
     }
 
     private String sanitizeEmail(String email) {
@@ -171,24 +160,18 @@ public class EnergyDetailsFragment extends Fragment {
     }
 
     private void fetchLatestDataFromFirebase() {
-        // 1) Get the raw email from SharedPreferences
         String userEmail = sharedPreferences.getString("USER_EMAIL", "default@gmail.com");
-
-        // 2) Sanitize it
         String sanitizedEmail = sanitizeEmail(userEmail);
 
-        // 3) Build the reference to the user's sensor data node
         databaseReference = FirebaseDatabase.getInstance()
                 .getReference("sensor_data")
                 .child(sanitizedEmail);
 
-        // 4) Query the last sensor reading under that user node
         databaseReference.orderByKey().limitToLast(1)
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
                         if (!snapshot.exists()) {
-                            Log.d(TAG, "No data found in snapshot");
                             updateInitialUI();
                             return;
                         }
@@ -202,60 +185,24 @@ public class EnergyDetailsFragment extends Fragment {
                                     ? data.child("heating_system").getValue(Double.class) : 0;
                             String rawTimestamp = data.child("timestamp").getValue(String.class);
 
-                            Log.d(TAG, "Raw Timestamp from Firebase: " + rawTimestamp);
-
                             String formattedTimestamp = formatTimestamp(rawTimestamp);
-                            Log.d(TAG, "Formatted Timestamp: " + formattedTimestamp);
 
-                            // Update sensor reading UI
-                            washingMachineTextView.setText(
-                                    "Washing Machine: " + String.format("%.2f", wm) + " Watts");
-                            fridgeTextView.setText(
-                                    "Fridge: " + String.format("%.2f", fridge) + " Watts");
-                            heatingSystemTextView.setText(
-                                    "Heating System: " + String.format("%.2f", heating) + " Watts");
+                            washingMachineTextView.setText("Washing Machine: " + String.format("%.2f", wm) + " Watts");
+                            fridgeTextView.setText("Fridge: " + String.format("%.2f", fridge) + " Watts");
+                            heatingSystemTextView.setText("Heating System: " + String.format("%.2f", heating) + " Watts");
                             lastUpdatedTextView.setText("Last Updated: " + formattedTimestamp);
                         }
                     }
 
                     @Override
                     public void onCancelled(@NonNull DatabaseError error) {
-                        Log.e(TAG, "Error fetching data: " + error.getMessage());
                         updateInitialUI();
                     }
                 });
     }
 
-    private String formatTimestamp(String timestamp) {
-        if (timestamp == null || timestamp.isEmpty()) {
-            return "--";
-        }
-        try {
-            // Parse timestamp assuming ISO 8601 with microseconds.
-            SimpleDateFormat isoFormat =
-                    new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.getDefault());
-            isoFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-            Date date = isoFormat.parse(timestamp);
-            if (date == null) return "--";
-            SimpleDateFormat readableFormat =
-                    new SimpleDateFormat("dd MMMM yyyy, hh:mm a", Locale.getDefault());
-            readableFormat.setTimeZone(TimeZone.getDefault());
-            return readableFormat.format(date);
-        } catch (ParseException e) {
-            Log.e(TAG, "Error parsing timestamp: " + timestamp, e);
-            return "--";
-        }
-    }
-
-    // Optional getter if you need to share the progress value with other fragments.
-    public int getProgress() {
-        return energyProgressBar.getProgress();
-    }
-
     private void fetchAggregatedTotals(View rootView) {
-        // Use the dynamically constructed totalsFilePath.
-        StorageReference totalsRef = FirebaseStorage.getInstance().getReference()
-                .child(totalsFilePath);
+        StorageReference totalsRef = FirebaseStorage.getInstance().getReference().child(totalsFilePath);
 
         totalsRef.getBytes(1024 * 1024)
                 .addOnSuccessListener(bytes -> {
@@ -270,19 +217,376 @@ public class EnergyDetailsFragment extends Fragment {
 
                         String formattedTimestamp = formatTimestamp(rawTimestamp);
 
-                        TextView washingTotalText = rootView.findViewById(R.id.text_total_washing_machine);
-                        TextView fridgeTotalText = rootView.findViewById(R.id.text_total_fridge);
-                        TextView heatingTotalText = rootView.findViewById(R.id.text_total_heating_system);
-                        TextView totalsTimestampText = rootView.findViewById(R.id.text_totals_timestamp);
+                        textTotalWashingMachine.setText("Total Washing Machine: " + String.format("%.2f", washingTotal) + " Watts");
+                        textTotalFridge.setText("Total Fridge: " + String.format("%.2f", fridgeTotal) + " Watts");
+                        textTotalHeatingSystem.setText("Total Heating System: " + String.format("%.2f", heatingTotal) + " Watts");
+                        textTotalsTimestamp.setText("Last Updated: " + formattedTimestamp);
 
-                        washingTotalText.setText("Total Washing Machine: " + String.format("%.2f", washingTotal) + " Watts");
-                        fridgeTotalText.setText("Total Fridge: " + String.format("%.2f", fridgeTotal) + " Watts");
-                        heatingTotalText.setText("Total Heating System: " + String.format("%.2f", heatingTotal) + " Watts");
-                        totalsTimestampText.setText("Last Updated: " + formattedTimestamp);
+                        double totalUsage = washingTotal + fridgeTotal + heatingTotal;
+                        totalUsageText.setText("Total Usage: " + String.format("%.2f", totalUsage) + " kWh");
+
+                        float remaining = estimatedKWh - (float) totalUsage;
+                        if (remaining < 0) remaining = 0;
+                        if (remainingEnergyText != null) {
+                            remainingEnergyText.setText("Remaining: " + String.format("%.2f", remaining) + " kWh");
+                        }
+
+                        calculateDailyPoints(totalUsage);
+
                     } catch (Exception e) {
                         Log.e(TAG, "Error parsing totals JSON", e);
                     }
                 })
                 .addOnFailureListener(e -> Log.e(TAG, "Failed to fetch totals JSON", e));
     }
+
+    private void calculateDailyPoints(double totalUsageToday) {
+        SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+        String lastAwardedDate = prefs.getString("LAST_POINTS_DATE", "");
+        String today = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+
+        if (lastAwardedDate.equals(today)) return;
+
+        float dailyEstimate = estimatedKWh / Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH);
+        int earnedPoints;
+
+        if (totalUsageToday <= dailyEstimate * 0.8f) {
+            earnedPoints = 10;
+        } else if (totalUsageToday <= dailyEstimate) {
+            earnedPoints = 5;
+        } else if (totalUsageToday <= dailyEstimate * 1.2f) {
+            earnedPoints = -5;
+        } else {
+            earnedPoints = -10;
+        }
+
+        int currentPoints = prefs.getInt("POINTS", 0);
+        int newPoints = Math.max(0, currentPoints + earnedPoints);
+
+        prefs.edit()
+                .putInt("POINTS", newPoints)
+                .putString("LAST_POINTS_DATE", today)
+                .apply();
+
+        if (pointsTextView != null) {
+            pointsTextView.setText("Points: " + newPoints);
+        }
+        if (pointsChangeTextView != null) {
+            pointsChangeTextView.setText("Points Today: " + earnedPoints);
+        }
+    }
+
+    private String formatTimestamp(String timestamp) {
+        if (timestamp == null || timestamp.isEmpty()) return "--";
+        try {
+            SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.getDefault());
+            isoFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date date = isoFormat.parse(timestamp);
+            if (date == null) return "--";
+            SimpleDateFormat readableFormat = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+            readableFormat.setTimeZone(TimeZone.getDefault());
+            return readableFormat.format(date);
+        } catch (ParseException e) {
+            return "--";
+        }
+
+    }
+
+    public int getProgress() {
+        return energyProgressBar.getProgress();
+    }
 }
+
+//
+//
+//package com.example.newapp;
+//
+//import android.content.Context;
+//import android.content.SharedPreferences;
+//import android.os.Bundle;
+//import android.os.Handler;
+//import android.util.Log;
+//import android.view.LayoutInflater;
+//import android.view.View;
+//import android.view.ViewGroup;
+//import android.widget.ProgressBar;
+//import android.widget.TextView;
+//
+//import androidx.annotation.NonNull;
+//import androidx.annotation.Nullable;
+//import androidx.fragment.app.Fragment;
+//
+//import com.google.firebase.database.DataSnapshot;
+//import com.google.firebase.database.DatabaseError;
+//import com.google.firebase.database.DatabaseReference;
+//import com.google.firebase.database.FirebaseDatabase;
+//import com.google.firebase.database.ValueEventListener;
+//import com.google.firebase.storage.FirebaseStorage;
+//import com.google.firebase.storage.StorageReference;
+//
+//import org.json.JSONObject;
+//
+//import java.nio.charset.StandardCharsets;
+//import java.text.ParseException;
+//import java.text.SimpleDateFormat;
+//import java.util.Calendar;
+//import java.util.Date;
+//import java.util.Locale;
+//import java.util.TimeZone;
+//
+//public class EnergyDetailsFragment extends Fragment {
+//
+//    private static final String TAG = "EnergyDetailsFragment";
+//    private String totalsFilePath;
+//
+//    private ProgressBar energyProgressBar;
+//    private TextView remainingEnergyText;
+//    private TextView washingMachineTextView, fridgeTextView, heatingSystemTextView;
+//    private TextView lastUpdatedTextView, pointsTextView;
+//    private TextView textTotalWashingMachine, textTotalFridge, textTotalHeatingSystem, textTotalsTimestamp;
+//    private TextView estimatedMonthlyText, estimatedDailyText, totalUsageText;
+//
+//    private DatabaseReference databaseReference;
+//    private SharedPreferences sharedPreferences;
+//
+//    private float estimatedKWh;
+//    private int points;
+//
+//    private final Handler totalsUpdateHandler = new Handler();
+//    private final Runnable totalsUpdateRunnable = () -> {
+//        if (getView() != null) {
+//            fetchAggregatedTotals(getView());
+//        }
+//        totalsUpdateHandler.postDelayed(this.totalsUpdateRunnable, 15000);
+//    };
+//
+//    private final SharedPreferences.OnSharedPreferenceChangeListener prefsListener =
+//            (sharedPreferences, key) -> {
+//                if (key.equals("ESTIMATED_KWH")) {
+//                    estimatedKWh = sharedPreferences.getFloat("ESTIMATED_KWH", 0);
+//                    if (estimatedMonthlyText != null) {
+//                        estimatedMonthlyText.setText("Estimated Monthly: " +
+//                                String.format("%.2f", estimatedKWh) + " kWh");
+//                        int daysInMonth = Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH);
+//                        double estimatedDailyUsage = estimatedKWh / daysInMonth;
+//                        if (estimatedDailyText != null) {
+//                            estimatedDailyText.setText(String.format("Estimated Daily: %.2f kWh", estimatedDailyUsage));
+//                        }
+//                    }
+//                }
+//            };
+//
+//    @Nullable
+//    @Override
+//    public View onCreateView(@NonNull LayoutInflater inflater,
+//                             @Nullable ViewGroup container,
+//                             @Nullable Bundle savedInstanceState) {
+//
+//        View view = inflater.inflate(R.layout.fragment_energy_details, container, false);
+//
+//        sharedPreferences = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+//        String userEmail = sharedPreferences.getString("USER_EMAIL", "default@gmail.com");
+//        totalsFilePath = "totals/" + userEmail + "/totals.json";
+//
+//        // Init views
+//        textTotalWashingMachine = view.findViewById(R.id.text_total_washing_machine);
+//        textTotalFridge = view.findViewById(R.id.text_total_fridge);
+//        textTotalHeatingSystem = view.findViewById(R.id.text_total_heating_system);
+//        textTotalsTimestamp = view.findViewById(R.id.text_totals_timestamp);
+//        totalUsageText = view.findViewById(R.id.text_total_usage);
+//        energyProgressBar = view.findViewById(R.id.energy_progress_bar);
+//        remainingEnergyText = view.findViewById(R.id.remaining_energy_text);
+//        washingMachineTextView = view.findViewById(R.id.text_washing_machine_reading);
+//        fridgeTextView = view.findViewById(R.id.text_fridge_reading);
+//        heatingSystemTextView = view.findViewById(R.id.text_heating_system_reading);
+//        lastUpdatedTextView = view.findViewById(R.id.text_last_updated);
+//        pointsTextView = view.findViewById(R.id.points_text);
+//        estimatedMonthlyText = view.findViewById(R.id.estimated_monthly_text);
+//        estimatedDailyText = view.findViewById(R.id.estimated_daily_text);
+//
+//        estimatedKWh = sharedPreferences.getFloat("ESTIMATED_KWH", 0);
+//        points = sharedPreferences.getInt("POINTS", 0);
+//
+//        updateInitialUI();
+//
+//        estimatedMonthlyText.setText("Estimated Monthly: " + String.format("%.2f", estimatedKWh) + " kWh");
+//        int daysInMonth = Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH);
+//        double estimatedDailyUsage = estimatedKWh / daysInMonth;
+//        estimatedDailyText.setText(String.format("Estimated Daily: %.2f kWh", estimatedDailyUsage));
+//
+//        sharedPreferences.registerOnSharedPreferenceChangeListener(prefsListener);
+//
+//        fetchAggregatedTotals(view);
+//        fetchLatestDataFromFirebase();
+//
+//        return view;
+//    }
+//
+//    @Override
+//    public void onResume() {
+//        super.onResume();
+//        totalsUpdateHandler.post(totalsUpdateRunnable);
+//    }
+//
+//    @Override
+//    public void onPause() {
+//        super.onPause();
+//        totalsUpdateHandler.removeCallbacks(totalsUpdateRunnable);
+//    }
+//
+//    @Override
+//    public void onDestroyView() {
+//        super.onDestroyView();
+//        if (sharedPreferences != null) {
+//            sharedPreferences.unregisterOnSharedPreferenceChangeListener(prefsListener);
+//        }
+//    }
+//
+//    private void updateInitialUI() {
+//        energyProgressBar.setMax(100);
+//        energyProgressBar.setProgress(0);
+//
+//        float wm = sharedPreferences.getFloat("LAST_WM", 0);
+//        float fridge = sharedPreferences.getFloat("LAST_FRIDGE", 0);
+//        float heating = sharedPreferences.getFloat("LAST_HEATING", 0);
+//        String timestamp = sharedPreferences.getString("LAST_TIMESTAMP", "--");
+//
+//        washingMachineTextView.setText("Washing Machine: " + String.format("%.2f", wm) + " Watts");
+//        fridgeTextView.setText("Fridge: " + String.format("%.2f", fridge) + " Watts");
+//        heatingSystemTextView.setText("Heating System: " + String.format("%.2f", heating) + " Watts");
+//        lastUpdatedTextView.setText("Last Updated: " + formatTimestamp(timestamp));
+//
+//        pointsTextView.setText("Points: " + points);
+//
+//        float totalWm = sharedPreferences.getFloat("TOTAL_WM", 0);
+//        float totalFridge = sharedPreferences.getFloat("TOTAL_FRIDGE", 0);
+//        float totalHeating = sharedPreferences.getFloat("TOTAL_HEATING", 0);
+//        float totalUsage = sharedPreferences.getFloat("TOTAL_USAGE", 0);
+//        float remaining = sharedPreferences.getFloat("REMAINING", 0);
+//        String totalsTime = sharedPreferences.getString("TOTAL_TIMESTAMP", "--");
+//
+//        textTotalWashingMachine.setText("Total Washing Machine: " + String.format("%.2f", totalWm) + " Watts");
+//        textTotalFridge.setText("Total Fridge: " + String.format("%.2f", totalFridge) + " Watts");
+//        textTotalHeatingSystem.setText("Total Heating System: " + String.format("%.2f", totalHeating) + " Watts");
+//        totalUsageText.setText("Total Usage: " + String.format("%.2f", totalUsage) + " kWh");
+//        textTotalsTimestamp.setText("Last Updated: " + formatTimestamp(totalsTime));
+//        remainingEnergyText.setText("Remaining: " + String.format("%.2f", remaining) + " kWh");
+//    }
+//
+//    private String sanitizeEmail(String email) {
+//        return email.replace(".", "_").replace("@", "_");
+//    }
+//
+//    private void fetchLatestDataFromFirebase() {
+//        String userEmail = sharedPreferences.getString("USER_EMAIL", "default@gmail.com");
+//        String sanitizedEmail = sanitizeEmail(userEmail);
+//
+//        databaseReference = FirebaseDatabase.getInstance()
+//                .getReference("sensor_data")
+//                .child(sanitizedEmail);
+//
+//        databaseReference.orderByKey().limitToLast(1)
+//                .addValueEventListener(new ValueEventListener() {
+//                    @Override
+//                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+//                        if (!snapshot.exists()) {
+//                            updateInitialUI();
+//                            return;
+//                        }
+//
+//                        for (DataSnapshot data : snapshot.getChildren()) {
+//                            double wm = data.child("washing_machine").getValue(Double.class) != null
+//                                    ? data.child("washing_machine").getValue(Double.class) : 0;
+//                            double fridge = data.child("fridge").getValue(Double.class) != null
+//                                    ? data.child("fridge").getValue(Double.class) : 0;
+//                            double heating = data.child("heating_system").getValue(Double.class) != null
+//                                    ? data.child("heating_system").getValue(Double.class) : 0;
+//                            String rawTimestamp = data.child("timestamp").getValue(String.class);
+//
+//                            String formattedTimestamp = formatTimestamp(rawTimestamp);
+//
+//                            washingMachineTextView.setText("Washing Machine: " + String.format("%.2f", wm) + " Watts");
+//                            fridgeTextView.setText("Fridge: " + String.format("%.2f", fridge) + " Watts");
+//                            heatingSystemTextView.setText("Heating System: " + String.format("%.2f", heating) + " Watts");
+//                            lastUpdatedTextView.setText("Last Updated: " + formattedTimestamp);
+//
+//                            SharedPreferences.Editor editor = sharedPreferences.edit();
+//                            editor.putFloat("LAST_WM", (float) wm);
+//                            editor.putFloat("LAST_FRIDGE", (float) fridge);
+//                            editor.putFloat("LAST_HEATING", (float) heating);
+//                            editor.putString("LAST_TIMESTAMP", rawTimestamp != null ? rawTimestamp : "--");
+//                            editor.apply();
+//                        }
+//                    }
+//
+//                    @Override
+//                    public void onCancelled(@NonNull DatabaseError error) {
+//                        updateInitialUI();
+//                    }
+//                });
+//    }
+//
+//    private void fetchAggregatedTotals(View rootView) {
+//        StorageReference totalsRef = FirebaseStorage.getInstance().getReference().child(totalsFilePath);
+//
+//        totalsRef.getBytes(1024 * 1024)
+//                .addOnSuccessListener(bytes -> {
+//                    try {
+//                        String json = new String(bytes, StandardCharsets.UTF_8);
+//                        JSONObject jsonObject = new JSONObject(json);
+//
+//                        double washingTotal = jsonObject.optDouble("washing_machine_total", 0);
+//                        double fridgeTotal = jsonObject.optDouble("fridge_total", 0);
+//                        double heatingTotal = jsonObject.optDouble("heating_system_total", 0);
+//                        String rawTimestamp = jsonObject.optString("timestamp", "--");
+//
+//                        String formattedTimestamp = formatTimestamp(rawTimestamp);
+//
+//                        textTotalWashingMachine.setText("Total Washing Machine: " + String.format("%.2f", washingTotal) + " Watts");
+//                        textTotalFridge.setText("Total Fridge: " + String.format("%.2f", fridgeTotal) + " Watts");
+//                        textTotalHeatingSystem.setText("Total Heating System: " + String.format("%.2f", heatingTotal) + " Watts");
+//                        textTotalsTimestamp.setText("Last Updated: " + formattedTimestamp);
+//
+//                        double totalUsage = washingTotal + fridgeTotal + heatingTotal;
+//                        totalUsageText.setText("Total Usage: " + String.format("%.2f", totalUsage) + " kWh");
+//
+//                        float remaining = estimatedKWh - (float) totalUsage;
+//                        if (remaining < 0) remaining = 0;
+//                        if (remainingEnergyText != null) {
+//                            remainingEnergyText.setText("Remaining: " + String.format("%.2f", remaining) + " kWh");
+//                        }
+//
+//                        SharedPreferences.Editor editor = sharedPreferences.edit();
+//                        editor.putFloat("TOTAL_WM", (float) washingTotal);
+//                        editor.putFloat("TOTAL_FRIDGE", (float) fridgeTotal);
+//                        editor.putFloat("TOTAL_HEATING", (float) heatingTotal);
+//                        editor.putFloat("TOTAL_USAGE", (float) totalUsage);
+//                        editor.putFloat("REMAINING", remaining);
+//                        editor.putString("TOTAL_TIMESTAMP", rawTimestamp);
+//                        editor.apply();
+//
+//                    } catch (Exception e) {
+//                        Log.e(TAG, "Error parsing totals JSON", e);
+//                    }
+//                })
+//                .addOnFailureListener(e -> Log.e(TAG, "Failed to fetch totals JSON", e));
+//    }
+//
+//    private String formatTimestamp(String timestamp) {
+//        if (timestamp == null || timestamp.isEmpty()) return "--";
+//        try {
+//            SimpleDateFormat isoFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.getDefault());
+//            isoFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+//            Date date = isoFormat.parse(timestamp);
+//            if (date == null) return "--";
+//            SimpleDateFormat readableFormat = new SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault());
+//            readableFormat.setTimeZone(TimeZone.getDefault());
+//            return readableFormat.format(date);
+//        } catch (ParseException e) {
+//            return "--";
+//        }
+//    }
+//    public int getProgress() {
+//        return energyProgressBar.getProgress();
+//    }
+//}
