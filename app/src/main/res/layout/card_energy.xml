@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/card_energy"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
+    android:clickable="true"
+    android:focusable="true"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="10dp"
+    app:cardBackgroundColor="@color/white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:gravity="center_horizontal">
+
+        <TextView
+            android:id="@+id/header_energy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Remaining Energy (kWh) ▼"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/black"
+            android:gravity="center"
+            android:paddingBottom="8dp" />
+
+        <LinearLayout
+            android:id="@+id/content_energy"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:gravity="center_horizontal">
+
+            <ProgressBar
+                android:id="@+id/energy_progress_bar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="20dp"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/custom_progress_bar" />
+
+            <TextView
+                android:id="@+id/remaining_energy_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Remaining: 0 kWh"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="8dp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/estimated_monthly_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Estimated Monthly: 0.00 kWh"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="4dp"
+                android:gravity="center" />
+
+            <TextView
+                android:id="@+id/estimated_daily_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Estimated Daily: 0.00 kWh"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:layout_marginTop="4dp"
+                android:gravity="center" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
