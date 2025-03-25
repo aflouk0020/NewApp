@@ -4,7 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -75,43 +75,70 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+//    @Override
+//    protected void onCreate(Bundle savedInstanceState) {
+//        super.onCreate(savedInstanceState);
+//        // If user is already signed in, skip sign-in
+//        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+//        if (currentUser != null) {
+//            Log.d(TAG, "User already signed in: " + currentUser.getEmail());
+//            // You might also want to update their FCM token here if needed.
+//            startActivity(new Intent(MainActivity.this, HomeActivity.class));
+//            finish();
+//            return;
+//        }
+//        // Retrieve and log your FCM token here
+//        FirebaseMessaging.getInstance().getToken()
+//                .addOnCompleteListener(task -> {
+//                    if (!task.isSuccessful()) {
+//                        Log.w(TAG, "Fetching FCM registration token failed", task.getException());
+//                        return;
+//                    }
+//
+//                    // Get and log new FCM registration token
+//                    String token = task.getResult();
+//                    Log.d(TAG, "FCM Token: " + token);
+//                });
+//
+//
+//
+//        if (getIntent() != null && "requests".equals(getIntent().getStringExtra("navigate_to"))) {
+//            // Switch to Requests tab (adjust this logic to match your tab setup)
+//            BottomNavigationView navView = findViewById(R.id.bottom_nav); // use your nav id
+//            navView.setSelectedItemId(R.id.navigation_requests); // match this with your menu item ID
+//        }
+//
+//
+//        setContentView(R.layout.activity_main);
+//    }
+@Override
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
 
+    setContentView(R.layout.activity_main); // ✅ First, set the content view
 
-
-
-
-
-
-
-
-
-        // If user is already signed in, skip sign-in
-        FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
-        if (currentUser != null) {
-            Log.d(TAG, "User already signed in: " + currentUser.getEmail());
-            // You might also want to update their FCM token here if needed.
-            startActivity(new Intent(MainActivity.this, HomeActivity.class));
-            finish();
-            return;
-        }
-        // Retrieve and log your FCM token here
-        FirebaseMessaging.getInstance().getToken()
-                .addOnCompleteListener(task -> {
-                    if (!task.isSuccessful()) {
-                        Log.w(TAG, "Fetching FCM registration token failed", task.getException());
-                        return;
-                    }
-
-                    // Get and log new FCM registration token
-                    String token = task.getResult();
-                    Log.d(TAG, "FCM Token: " + token);
-                });
-
-        setContentView(R.layout.activity_main);
+    // Check if user is already signed in
+    FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+    if (currentUser != null) {
+        Log.d(TAG, "User already signed in: " + currentUser.getEmail());
+        startActivity(new Intent(MainActivity.this, HomeActivity.class));
+        finish();
+        return;
     }
+
+    // Retrieve and log FCM token
+    FirebaseMessaging.getInstance().getToken()
+            .addOnCompleteListener(task -> {
+                if (!task.isSuccessful()) {
+                    Log.w(TAG, "Fetching FCM registration token failed", task.getException());
+                    return;
+                }
+
+                String token = task.getResult();
+                Log.d(TAG, "FCM Token: " + token);
+            });
+
+}
 
     // Called when the user clicks the sign-in button
     public void signIn(View view) {

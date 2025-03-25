@@ -75,7 +75,6 @@ public class RequestsFragment extends Fragment {
                     yourContainer.addView(requestView);
                 }
 
-
             }
 
             @Override

@@ -1,6 +1,6 @@
 package com.example.newapp;
 import android.widget.TextView;
-
+import com.google.firebase.database.DataSnapshot;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
@@ -28,6 +28,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
+
 
 public class HomeFragment extends Fragment {
     private FriendManager friendManager;
