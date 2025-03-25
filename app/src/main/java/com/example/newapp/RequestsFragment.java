@@ -8,10 +8,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Button;
 import android.widget.Toast;
-
+import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import com.google.firebase.auth.FirebaseAuth;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
@@ -28,6 +29,7 @@ public class RequestsFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_requests, container, false);
+        Log.d("RequestsFragment", "Fragment created, current UID = " + FirebaseAuth.getInstance().getCurrentUser().getUid());
 
         yourContainer = view.findViewById(R.id.requests_container); // ✅ initialize the container
         usersRef = FirebaseDatabase.getInstance().getReference("users");
@@ -37,7 +39,7 @@ public class RequestsFragment extends Fragment {
             @Override
             public void onRequestsChanged(@NonNull DataSnapshot snapshot) {
                 yourContainer.removeAllViews(); // Clear existing UI elements
-
+                Log.d("RequestsFragment", "Requests changed: " + snapshot.toString());
                 if (!snapshot.exists()) {
                     // Optionally handle empty state
                     return;
@@ -72,6 +74,8 @@ public class RequestsFragment extends Fragment {
 
                     yourContainer.addView(requestView);
                 }
+
+
             }
 
             @Override

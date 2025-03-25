@@ -286,14 +286,34 @@ public class HomeActivity extends AppCompatActivity {
         return true;
     }
 
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        if (item.getItemId() == R.id.action_logout) {
-            logoutUser();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+//    @Override
+//    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+//        if (item.getItemId() == R.id.action_logout) {
+//            logoutUser();
+//            return true;
+//        }
+//        return super.onOptionsItemSelected(item);
+//    }
+@Override
+public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    int id = item.getItemId();
+
+    if (id == R.id.action_requests) {
+        // 🔔 Navigate to RequestsFragment
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, new RequestsFragment())
+                .addToBackStack(null)
+                .commit();
+        return true;
     }
+
+    if (id == R.id.action_logout) {
+        logoutUser();
+        return true;
+    }
+
+    return super.onOptionsItemSelected(item);
+}
 
     private void logoutUser() {
         FirebaseAuth.getInstance().signOut();

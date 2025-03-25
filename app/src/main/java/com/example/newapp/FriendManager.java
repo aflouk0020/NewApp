@@ -31,6 +31,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 
+
 public class FriendManager {
 
     private static final String TAG = "FriendManager";
@@ -73,38 +74,90 @@ public class FriendManager {
         });
     }
 
-public void sendFriendRequest(String targetUid) {
-    if (currentUser == null) {
-        Log.e(TAG, "No authenticated user.");
-        return;
+
+
+
+    public void sendFriendRequest(String targetUid) {
+        if (currentUser == null) {
+            Log.e(TAG, "No authenticated user.");
+            return;
+        }
+
+        if (currentUser.getUid().equals(targetUid)) {
+            Toast.makeText(context, "Cannot send friend request to yourself", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        DatabaseReference targetRequestsRef = friendRequestsRef.child(targetUid);
+
+        // 🔍 Check if a request from this user already exists
+        targetRequestsRef.orderByChild("requesterUid")
+                .equalTo(currentUser.getUid())
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        if (snapshot.exists()) {
+                            Toast.makeText(context, "Friend request already sent.", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        // 🆕 No existing request, so send one
+                        String requestKey = targetRequestsRef.push().getKey();
+                        if (requestKey == null) {
+                            Toast.makeText(context, "Failed to generate request key", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        Map<String, Object> requestData = new HashMap<>();
+                        requestData.put("requesterUid", currentUser.getUid());
+                        requestData.put("status", "pending");
+                        requestData.put("timestamp", System.currentTimeMillis());
+
+                        targetRequestsRef.child(requestKey).setValue(requestData)
+                                .addOnSuccessListener(aVoid ->
+                                        Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show())
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(context, "Failed to send request: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    }
+
+                    @Override
+                    public void onCancelled(@NonNull DatabaseError error) {
+                        Log.e(TAG, "sendFriendRequest check failed: " + error.getMessage());
+                    }
+                });
     }
 
-    if (currentUser.getUid().equals(targetUid)) {
-        Toast.makeText(context, "Cannot send friend request to yourself", Toast.LENGTH_SHORT).show();
-        return;
-    }
-
-    DatabaseReference targetRequestsRef = friendRequestsRef.child(targetUid);
-    String requestKey = targetRequestsRef.push().getKey();
-    if (requestKey == null) {
-        Toast.makeText(context, "Failed to generate request key", Toast.LENGTH_SHORT).show();
-        return;
-    }
-
-    Map<String, Object> requestData = new HashMap<>();
-    requestData.put("requesterUid", currentUser.getUid());
-    requestData.put("status", "pending");
-    requestData.put("timestamp", System.currentTimeMillis());
-
-    targetRequestsRef.child(requestKey).setValue(requestData)
-            .addOnSuccessListener(aVoid -> {
-                Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show();
-
-            })
-            .addOnFailureListener(e ->
-                    Toast.makeText(context, "Failed to send request: " + e.getMessage(), Toast.LENGTH_SHORT).show());
-}
-
+//public void sendFriendRequest(String targetUid) {
+//    if (currentUser == null) {
+//        Log.e(TAG, "No authenticated user.");
+//        return;
+//    }
+//
+//    if (currentUser.getUid().equals(targetUid)) {
+//        Toast.makeText(context, "Cannot send friend request to yourself", Toast.LENGTH_SHORT).show();
+//        return;
+//    }
+//
+//    DatabaseReference targetRequestsRef = friendRequestsRef.child(targetUid);
+//    String requestKey = targetRequestsRef.push().getKey();
+//    if (requestKey == null) {
+//        Toast.makeText(context, "Failed to generate request key", Toast.LENGTH_SHORT).show();
+//        return;
+//    }
+//
+//    Map<String, Object> requestData = new HashMap<>();
+//    requestData.put("requesterUid", currentUser.getUid());
+//    requestData.put("status", "pending");
+//    requestData.put("timestamp", System.currentTimeMillis());
+//
+//    targetRequestsRef.child(requestKey).setValue(requestData)
+//            .addOnSuccessListener(aVoid -> {
+//                Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show();
+//
+//            })
+//            .addOnFailureListener(e ->
+//                    Toast.makeText(context, "Failed to send request: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+//}
 
 
     private void sendFCMNotification(String recipientToken) {
@@ -203,10 +256,12 @@ public void sendFriendRequest(String targetUid) {
             return;
         }
 
+
         friendRequestsRef.child(currentUser.getUid())
                 .addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot snapshot) {
+                        Log.d("RequestsFragment", "Requests changed: " + snapshot.toString());
                         listener.onRequestsChanged(snapshot);
                     }
 
@@ -215,6 +270,7 @@ public void sendFriendRequest(String targetUid) {
                         listener.onRequestError(error.toException());
                     }
                 });
+
     }
 
 }
