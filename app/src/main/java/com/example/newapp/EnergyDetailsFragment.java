@@ -27,23 +27,20 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class EnergyDetailsFragment extends Fragment {
+    private ProgressBar overuseProgressBar;
 
     private static final String TAG = "EnergyDetailsFragment";
     private String totalsFilePath;
-
     private ProgressBar energyProgressBar;
     private TextView remainingEnergyText;
     private TextView washingMachineTextView, fridgeTextView, heatingSystemTextView;
     private TextView lastUpdatedTextView, pointsTextView, pointsChangeTextView;
     private TextView textTotalWashingMachine, textTotalFridge, textTotalHeatingSystem, textTotalsTimestamp;
     private TextView estimatedMonthlyText, estimatedDailyText, totalUsageText;
-
     private DatabaseReference databaseReference;
     private SharedPreferences sharedPreferences;
-
     private float estimatedKWh;
     private int points;
-
     private final Handler totalsUpdateHandler = new Handler();
     private final Runnable totalsUpdateRunnable = () -> {
         if (getView() != null) {
@@ -75,6 +72,9 @@ public class EnergyDetailsFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
 
+
+
+
         View view = inflater.inflate(R.layout.fragment_energy_details, container, false);
 
         sharedPreferences = requireActivity().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
@@ -97,12 +97,17 @@ public class EnergyDetailsFragment extends Fragment {
         estimatedMonthlyText = view.findViewById(R.id.estimated_monthly_text);
         estimatedDailyText = view.findViewById(R.id.estimated_daily_text);
         pointsChangeTextView = view.findViewById(R.id.text_points_change);
-
         // Toggle Cards
         toggleCard(view, R.id.header_energy, R.id.content_energy, "Remaining Energy (kWh)");
         toggleCard(view, R.id.header_devices, R.id.content_devices, "Device Readings");
         toggleCard(view, R.id.header_points, R.id.content_points, "Points Earned");
         toggleCard(view, R.id.header_totals, R.id.content_totals, "Totals");
+
+
+
+        overuseProgressBar = view.findViewById(R.id.overuse_progress_bar);
+
+
 
         estimatedKWh = sharedPreferences.getFloat("ESTIMATED_KWH", 0);
         points = sharedPreferences.getInt("POINTS", 0);
@@ -215,53 +220,74 @@ public class EnergyDetailsFragment extends Fragment {
                     }
                 });
     }
+private void fetchAggregatedTotals(View rootView) {
+    StorageReference totalsRef = FirebaseStorage.getInstance().getReference().child(totalsFilePath);
 
-    private void fetchAggregatedTotals(View rootView) {
-        StorageReference totalsRef = FirebaseStorage.getInstance().getReference().child(totalsFilePath);
+    totalsRef.getBytes(1024 * 1024)
+            .addOnSuccessListener(bytes -> {
+                try {
+                    String json = new String(bytes, StandardCharsets.UTF_8);
+                    JSONObject jsonObject = new JSONObject(json);
+                    double washingTotal = jsonObject.optDouble("washing_machine_total", 0);
+                    double fridgeTotal = jsonObject.optDouble("fridge_total", 0);
+                    double heatingTotal = jsonObject.optDouble("heating_system_total", 0);
+                    String rawTimestamp = jsonObject.optString("timestamp", "--");
+                    String formattedTimestamp = formatTimestamp(rawTimestamp);
+                    textTotalWashingMachine.setText("Total Washing Machine: " + String.format("%.2f", washingTotal) + " Watts");
+                    textTotalFridge.setText("Total Fridge: " + String.format("%.2f", fridgeTotal) + " Watts");
+                    textTotalHeatingSystem.setText("Total Heating System: " + String.format("%.2f", heatingTotal) + " Watts");
+                    textTotalsTimestamp.setText("Last Updated: " + formattedTimestamp);
+                    double totalUsage = (washingTotal + fridgeTotal + heatingTotal)  ;
+                    totalUsageText.setText("Total Usage: " + String.format("%.2f", totalUsage) + " kWh");
 
-        totalsRef.getBytes(1024 * 1024)
-                .addOnSuccessListener(bytes -> {
-                    try {
-                        String json = new String(bytes, StandardCharsets.UTF_8);
-                        JSONObject jsonObject = new JSONObject(json);
+                    sharedPreferences.edit().putFloat("TOTAL_USAGE_KWH", (float) totalUsage).apply();
 
-                        double washingTotal = jsonObject.optDouble("washing_machine_total", 0);
-                        double fridgeTotal = jsonObject.optDouble("fridge_total", 0);
-                        double heatingTotal = jsonObject.optDouble("heating_system_total", 0);
-                        String rawTimestamp = jsonObject.optString("timestamp", "--");
+                    float remaining = estimatedKWh - (float) totalUsage;
 
-                        String formattedTimestamp = formatTimestamp(rawTimestamp);
-
-                        textTotalWashingMachine.setText("Total Washing Machine: " + String.format("%.2f", washingTotal) + " Watts");
-                        textTotalFridge.setText("Total Fridge: " + String.format("%.2f", fridgeTotal) + " Watts");
-                        textTotalHeatingSystem.setText("Total Heating System: " + String.format("%.2f", heatingTotal) + " Watts");
-                        textTotalsTimestamp.setText("Last Updated: " + formattedTimestamp);
-
-                        double totalUsage = washingTotal + fridgeTotal + heatingTotal;
-                        totalUsageText.setText("Total Usage: " + String.format("%.2f", totalUsage) + " kWh");
-
-                        sharedPreferences.edit().putFloat("TOTAL_USAGE_KWH", (float) totalUsage).apply();
-
-                        float remaining = estimatedKWh - (float) totalUsage;
-                        if (remaining < 0) remaining = 0;
-                        if (remainingEnergyText != null) {
-                            remainingEnergyText.setText("Remaining: " + String.format("%.2f", remaining) + " kWh");
-                        }
-
-                        calculateDailyPoints(totalUsage);
-
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error parsing totals JSON", e);
+                    if (remainingEnergyText != null) {
+                        remainingEnergyText.setText("Remaining: " + String.format("%.2f", remaining) + " kWh");
                     }
-                })
-                .addOnFailureListener(e -> {
-                    Log.e(TAG, "Failed to fetch totals JSON", e);
 
-                    float fallbackUsage = sharedPreferences.getFloat("TOTAL_USAGE_KWH", 0);
-                    Log.d(TAG, "Using fallback total usage for points: " + fallbackUsage);
-                    calculateDailyPoints(fallbackUsage);
-                });
-    }
+                    if (totalUsage <= estimatedKWh) {
+                        int progress = (int) ((totalUsage / estimatedKWh) * 100);
+                        energyProgressBar.setProgress(progress);
+                        energyProgressBar.setVisibility(View.VISIBLE);
+                        overuseProgressBar.setVisibility(View.GONE);
+
+                        // Save to preferences for HomeFragment
+                        sharedPreferences.edit()
+                                .putInt("PROGRESS_CIRCLE", progress)
+                                .putString("PROGRESS_COLOR", "green")
+                                .apply();
+
+                    } else {
+                        double overUsed = totalUsage - estimatedKWh;
+                        int redProgress = (int) ((overUsed / estimatedKWh) * 100);
+                        overuseProgressBar.setProgress(redProgress);
+                        overuseProgressBar.setVisibility(View.VISIBLE);
+                        energyProgressBar.setVisibility(View.GONE);
+
+                        // Save to preferences for HomeFragment
+                        sharedPreferences.edit()
+                                .putInt("PROGRESS_CIRCLE", redProgress)
+                                .putString("PROGRESS_COLOR", "red")
+                                .apply();
+                    }
+
+
+
+                    calculateDailyPoints(totalUsage);
+
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing totals JSON", e);
+                }
+            })
+            .addOnFailureListener(e -> {
+                Log.e(TAG, "Failed to fetch totals JSON", e);
+                float fallbackUsage = sharedPreferences.getFloat("TOTAL_USAGE_KWH", 0);
+                calculateDailyPoints(fallbackUsage);
+            });
+}
 
     private void calculateDailyPoints(double totalUsageToday) {
         SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);

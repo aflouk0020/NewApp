@@ -47,6 +47,20 @@
                 android:progress="0"
                 android:progressDrawable="@drawable/custom_progress_bar" />
 
+            <ProgressBar
+                android:id="@+id/overuse_progress_bar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="20dp"
+                android:max="100"
+                android:progress="0"
+                android:visibility="gone"
+                android:progressDrawable="@drawable/custom_progress_bar_red" />
+
+
+
+
+
             <TextView
                 android:id="@+id/remaining_energy_text"
                 android:layout_width="match_parent"

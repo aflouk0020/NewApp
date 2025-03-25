@@ -11,8 +11,10 @@ import android.widget.LinearLayout;
 import android.widget.EditText;
 import android.widget.Button;
 import android.widget.Toast;
+import android.content.Context;
 
 import android.util.Log;
+import android.content.SharedPreferences;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -29,7 +31,9 @@ import com.google.firebase.database.ValueEventListener;
 
 public class HomeFragment extends Fragment {
     private FriendManager friendManager;
-    private ProgressBar circularProgressIcon;
+    //private ProgressBar circularProgressIcon;
+    private com.google.android.material.progressindicator.CircularProgressIndicator circularProgressIcon;
+
     private Handler handler;
     private Runnable progressSyncRunnable;
 
@@ -114,19 +118,49 @@ public class HomeFragment extends Fragment {
         progressSyncRunnable = new Runnable() {
             @Override
             public void run() {
-                // Check if EnergyDetailsFragment is active and get its progress.
-                FragmentManager fragmentManager = getParentFragmentManager();
-                Fragment fragment = fragmentManager.findFragmentById(R.id.fragment_container);
-                if (fragment instanceof EnergyDetailsFragment) {
-                    int progress = ((EnergyDetailsFragment) fragment).getProgress();
-                    circularProgressIcon.setProgress(progress);
+                // Fetch progress and color from SharedPreferences
+                SharedPreferences prefs = requireContext().getSharedPreferences("UserPrefs", Context.MODE_PRIVATE);
+                int progress = prefs.getInt("PROGRESS_CIRCLE", 0);
+                String color = prefs.getString("PROGRESS_COLOR", "green");
+
+                // Set progress
+                circularProgressIcon.setProgressCompat(progress, true);
+
+                // Set color
+                if (color.equals("green")) {
+                    circularProgressIcon.setIndicatorColor(getResources().getColor(R.color.green_progress));
+                } else {
+                    circularProgressIcon.setIndicatorColor(getResources().getColor(R.color.red_progress));
                 }
-                // Sync every 100ms.
+
+                // Run again after 100ms
                 handler.postDelayed(this, 100);
             }
         };
         handler.post(progressSyncRunnable);
     }
+
+
+
+
+//    private void startProgressSync() {
+//        handler = new Handler();
+//        progressSyncRunnable = new Runnable() {
+//            @Override
+//            public void run() {
+//                // Check if EnergyDetailsFragment is active and get its progress.
+//                FragmentManager fragmentManager = getParentFragmentManager();
+//                Fragment fragment = fragmentManager.findFragmentById(R.id.fragment_container);
+//                if (fragment instanceof EnergyDetailsFragment) {
+//                    int progress = ((EnergyDetailsFragment) fragment).getProgress();
+//                    circularProgressIcon.setProgress(progress);
+//                }
+//                // Sync every 100ms.
+//                handler.postDelayed(this, 100);
+//            }
+//        };
+//        handler.post(progressSyncRunnable);
+//    }
 
     @Override
     public void onDestroyView() {

@@ -98,7 +98,7 @@
                         android:layout_width="72dp"
                         android:layout_height="72dp"
                         android:layout_gravity="center"
-                        android:indeterminate="true"
+                        android:indeterminate="false"
                         app:indicatorColor="@color/green_progress"
                         app:trackColor="@color/gray_progress"
                         app:trackThickness="6dp" />
