@@ -9,11 +9,12 @@ import android.widget.TextView;
 import android.widget.Button;
 import android.widget.Toast;
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import com.google.firebase.auth.FirebaseAuth;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -29,34 +30,30 @@ public class RequestsFragment extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_requests, container, false);
-        Log.d("RequestsFragment", "Fragment created, current UID = " + FirebaseAuth.getInstance().getCurrentUser().getUid());
-
-        yourContainer = view.findViewById(R.id.requests_container); // ✅ initialize the container
+        yourContainer = view.findViewById(R.id.requests_container);
         usersRef = FirebaseDatabase.getInstance().getReference("users");
         friendManager = new FriendManager(requireContext());
 
         friendManager.listenForIncomingRequests(new FriendManager.OnFriendRequestListener() {
             @Override
             public void onRequestsChanged(@NonNull DataSnapshot snapshot) {
-                yourContainer.removeAllViews(); // Clear existing UI elements
-                Log.d("RequestsFragment", "Requests changed: " + snapshot.toString());
-                if (!snapshot.exists()) {
-                    // Optionally handle empty state
-                    return;
-                }
+                yourContainer.removeAllViews();
+                Log.d("RequestsFragment", "Requests changed");
+
+                if (!snapshot.exists()) return;
 
                 for (DataSnapshot requestSnap : snapshot.getChildren()) {
                     String requestKey = requestSnap.getKey();
                     String requesterUid = requestSnap.child("requesterUid").getValue(String.class);
                     String status = requestSnap.child("status").getValue(String.class);
 
-                    View requestView = getLayoutInflater().inflate(R.layout.friend_request_item, yourContainer, false);
+                    if (!"pending".equals(status)) continue; // ✅ Only show pending
 
+                    View requestView = getLayoutInflater().inflate(R.layout.friend_request_item, yourContainer, false);
                     TextView emailText = requestView.findViewById(R.id.requesterEmail);
                     Button acceptButton = requestView.findViewById(R.id.acceptButton);
                     Button denyButton = requestView.findViewById(R.id.denyButton);
 
-                    // Load and set requester email (optional but cleaner than just UID)
                     usersRef.child(requesterUid).child("email").get().addOnSuccessListener(snapshot1 -> {
                         String requesterEmail = snapshot1.getValue(String.class);
                         emailText.setText("From: " + (requesterEmail != null ? requesterEmail : requesterUid));
@@ -64,17 +61,11 @@ public class RequestsFragment extends Fragment {
                         emailText.setText("From: " + requesterUid);
                     });
 
-                    acceptButton.setOnClickListener(v ->
-                            friendManager.acceptRequest(requestKey, requesterUid)
-                    );
-
-                    denyButton.setOnClickListener(v ->
-                            friendManager.denyRequest(requestKey)
-                    );
+                    acceptButton.setOnClickListener(v -> friendManager.acceptRequest(requestKey, requesterUid));
+                    denyButton.setOnClickListener(v -> friendManager.denyRequest(requestKey));
 
                     yourContainer.addView(requestView);
                 }
-
             }
 
             @Override

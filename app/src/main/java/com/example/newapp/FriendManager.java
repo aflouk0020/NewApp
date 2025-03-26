@@ -2,23 +2,25 @@ package com.example.newapp;
 
 import android.content.Context;
 import android.util.Log;
-import androidx.annotation.NonNull;
 import android.widget.Toast;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
+
+import androidx.annotation.NonNull;
+
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.*;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.Map;
 
+import okhttp3.*;
+
 public class FriendManager {
     private static final String TAG = "FriendManager";
-    private Context context;
-    //private final FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+    private final Context context;
     private final FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
     private final DatabaseReference friendRequestsRef = FirebaseDatabase.getInstance().getReference("friendRequests");
     private final DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
@@ -27,80 +29,70 @@ public class FriendManager {
         this.context = context;
     }
 
-    // Interface for search result callbacks
     public interface OnUserSearchResultListener {
         void onSearchCompleted(DataSnapshot snapshot);
         void onSearchFailed(Exception e);
     }
 
-    // Method to search users by email
     public void searchUsersByEmail(String searchTerm, OnUserSearchResultListener listener) {
         if (searchTerm == null || searchTerm.isEmpty()) {
-            Log.e(TAG, "searchUsersByEmail: Search term is null or empty");
             if (listener != null) {
                 listener.onSearchFailed(new IllegalArgumentException("Search term cannot be empty"));
             }
             return;
         }
 
-        DatabaseReference usersRef = FirebaseDatabase.getInstance().getReference("users");
         Query query = usersRef.orderByChild("email").equalTo(searchTerm);
         query.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (listener != null) {
-                    listener.onSearchCompleted(snapshot);
-                }
+                if (listener != null) listener.onSearchCompleted(snapshot);
             }
 
-            @Override
             public void onCancelled(@NonNull DatabaseError error) {
-                if (listener != null) {
-                    listener.onSearchFailed(error.toException());
-                }
+                if (listener != null) listener.onSearchFailed(error.toException());
             }
         });
     }
 
+    // ✅ Accept friend request and clean up
     public void acceptRequest(String requestKey, String requesterUid) {
         if (currentUser == null) return;
 
         String currentUid = currentUser.getUid();
-
         DatabaseReference friendsRef = FirebaseDatabase.getInstance().getReference("friends");
 
-        // Step 1: Check if already friends
-        friendsRef.child(currentUid).child(requesterUid).get().addOnSuccessListener(friendSnapshot -> {
-            if (friendSnapshot.exists()) {
+        friendsRef.child(currentUid).child(requesterUid).get().addOnSuccessListener(snapshot -> {
+            if (snapshot.exists()) {
                 Toast.makeText(context, "You are already friends!", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            // Step 2: Add to friends
+            // Add each other as friends
             friendsRef.child(currentUid).child(requesterUid).setValue(true);
             friendsRef.child(requesterUid).child(currentUid).setValue(true);
 
-            // Step 3: Update the friend request status
+            // Update status to accepted
             friendRequestsRef.child(currentUid).child(requestKey).child("status").setValue("accepted")
                     .addOnSuccessListener(aVoid -> {
-                        // Step 4: Update sender's sentFriendRequests status
                         DatabaseReference sentRef = FirebaseDatabase.getInstance()
                                 .getReference("sentFriendRequests")
                                 .child(requesterUid)
                                 .child(currentUid);
+
                         sentRef.child("status").setValue("accepted");
+
+                        // ✅ CLEAN UP: Remove both sides of request (so fragment refreshes)
+                        friendRequestsRef.child(currentUid).child(requestKey).removeValue();
+                        sentRef.removeValue();
 
                         Toast.makeText(context, "Friend request accepted", Toast.LENGTH_SHORT).show();
                     })
-                    .addOnFailureListener(e -> {
-                        Toast.makeText(context, "Failed to accept request", Toast.LENGTH_SHORT).show();
-                    });
+                    .addOnFailureListener(e ->
+                            Toast.makeText(context, "Failed to accept request", Toast.LENGTH_SHORT).show());
 
-        }).addOnFailureListener(e -> {
-            Toast.makeText(context, "Failed to check friendship", Toast.LENGTH_SHORT).show();
-        });
+        }).addOnFailureListener(e ->
+                Toast.makeText(context, "Failed to check friendship", Toast.LENGTH_SHORT).show());
     }
-
 
     public void denyRequest(String requestKey) {
         if (currentUser == null) return;
@@ -115,56 +107,33 @@ public class FriendManager {
                 return;
             }
 
-            // 1. Remove from friendRequests
             friendRequestsRef.child(currentUid).child(requestKey).removeValue()
                     .addOnSuccessListener(aVoid1 -> {
-                        Log.d(TAG, "Removed from friendRequests.");
-
-                        // 2. Then remove from sentFriendRequests
                         DatabaseReference sentRef = FirebaseDatabase.getInstance()
                                 .getReference("sentFriendRequests")
                                 .child(requesterUid)
                                 .child(currentUid);
-
                         sentRef.removeValue()
-                                .addOnSuccessListener(aVoid2 -> {
-                                    Log.d(TAG, "Removed from sentFriendRequests.");
-                                    Toast.makeText(context, "Friend request denied", Toast.LENGTH_SHORT).show();
-                                })
-                                .addOnFailureListener(e -> {
-                                    Log.e(TAG, "Failed to remove from sentFriendRequests: " + e.getMessage());
-                                    Toast.makeText(context, "Cleanup failed", Toast.LENGTH_SHORT).show();
-                                });
-
+                                .addOnSuccessListener(aVoid2 ->
+                                        Toast.makeText(context, "Friend request denied", Toast.LENGTH_SHORT).show())
+                                .addOnFailureListener(e ->
+                                        Toast.makeText(context, "Cleanup failed", Toast.LENGTH_SHORT).show());
                     })
-                    .addOnFailureListener(e -> {
-                        Log.e(TAG, "Failed to remove from friendRequests: " + e.getMessage());
-                        Toast.makeText(context, "Failed to deny request", Toast.LENGTH_SHORT).show();
-                    });
-
-        }).addOnFailureListener(e -> {
-            Log.e(TAG, "Failed to fetch request: " + e.getMessage());
-            Toast.makeText(context, "Error loading request", Toast.LENGTH_SHORT).show();
-        });
+                    .addOnFailureListener(e ->
+                            Toast.makeText(context, "Failed to deny request", Toast.LENGTH_SHORT).show());
+        }).addOnFailureListener(e ->
+                Toast.makeText(context, "Error loading request", Toast.LENGTH_SHORT).show());
     }
+
     public void sendFriendRequest(String targetUid) {
-        if (currentUser == null) {
-            Log.e(TAG, "No authenticated user.");
+        if (currentUser == null || currentUser.getUid().equals(targetUid)) {
+            Toast.makeText(context, "Invalid operation", Toast.LENGTH_SHORT).show();
             return;
         }
 
         String currentUid = currentUser.getUid();
-
-        if (currentUid.equals(targetUid)) {
-            Toast.makeText(context, "Cannot send friend request to yourself", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Step 1: Check if already friends
-        DatabaseReference friendsRef = FirebaseDatabase.getInstance()
-                .getReference("friends")
-                .child(currentUid)
-                .child(targetUid);
+        DatabaseReference friendsRef = FirebaseDatabase.getInstance().getReference("friends")
+                .child(currentUid).child(targetUid);
 
         friendsRef.get().addOnSuccessListener(friendSnapshot -> {
             if (friendSnapshot.exists()) {
@@ -172,7 +141,6 @@ public class FriendManager {
                 return;
             }
 
-            // Step 2: Check if a pending request already exists
             DatabaseReference sentRequestsRef = FirebaseDatabase.getInstance()
                     .getReference("sentFriendRequests")
                     .child(currentUid)
@@ -185,7 +153,6 @@ public class FriendManager {
                     return;
                 }
 
-                // Step 3: Proceed to send request
                 DatabaseReference targetRequestsRef = friendRequestsRef.child(targetUid);
                 String requestKey = targetRequestsRef.push().getKey();
                 if (requestKey == null) {
@@ -208,106 +175,132 @@ public class FriendManager {
                             sentRequestsRef.setValue(sentData)
                                     .addOnSuccessListener(aVoid2 -> {
                                         Toast.makeText(context, "Friend request sent!", Toast.LENGTH_SHORT).show();
-                                        Log.d(TAG, "Friend request sent successfully!");
-
                                         usersRef.child(targetUid).child("fcmToken").get()
                                                 .addOnSuccessListener(tokenSnap -> {
                                                     String token = tokenSnap.getValue(String.class);
-                                                    if (token != null) {
-                                                        sendFCMNotification(token, requestKey);
-                                                    } else {
-                                                        Log.w(TAG, "FCM token for user " + targetUid + " is null.");
-                                                    }
-                                                })
-                                                .addOnFailureListener(e -> {
-                                                    Log.e(TAG, "Failed to retrieve FCM token: " + e.getMessage());
+                                                    if (token != null) sendFCMNotification(token, requestKey);
                                                 });
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        Log.e(TAG, "Failed to update sentFriendRequests: " + e.getMessage());
                                     });
-                        })
-                        .addOnFailureListener(e -> {
-                            Toast.makeText(context, "Failed to send request: " + e.getMessage(), Toast.LENGTH_SHORT).show();
                         });
-
-            }).addOnFailureListener(e -> {
-                Toast.makeText(context, "Failed to check existing request", Toast.LENGTH_SHORT).show();
             });
-
-        }).addOnFailureListener(e -> {
-            Toast.makeText(context, "Failed to check friendship", Toast.LENGTH_SHORT).show();
         });
     }
 
-
     private void sendFCMNotification(String recipientToken, String requestKey) {
-        okhttp3.OkHttpClient client = new okhttp3.OkHttpClient();
-        org.json.JSONObject json = new org.json.JSONObject();
+        OkHttpClient client = new OkHttpClient();
+        JSONObject json = new JSONObject();
 
         try {
-            org.json.JSONObject data = new org.json.JSONObject();
+            JSONObject data = new JSONObject();
             data.put("requesterUid", currentUser.getUid());
             data.put("requestKey", requestKey);
 
             json.put("to", recipientToken);
             json.put("data", data);
 
-            okhttp3.RequestBody body = okhttp3.RequestBody.create(
+            RequestBody body = RequestBody.create(
                     json.toString(),
-                    okhttp3.MediaType.parse("application/json; charset=utf-8")
+                    MediaType.parse("application/json; charset=utf-8")
             );
 
-            okhttp3.Request request = new okhttp3.Request.Builder()
+            Request request = new Request.Builder()
                     .url("https://fcm.googleapis.com/fcm/send")
-                    .addHeader("Authorization", "key=YOUR_SERVER_KEY_HERE") // <-- Replace with your actual FCM server key
+                    .addHeader("Authorization", "key=YOUR_SERVER_KEY_HERE") // Replace this!
                     .post(body)
                     .build();
 
-            client.newCall(request).enqueue(new okhttp3.Callback() {
-                @Override
-                public void onFailure(@NonNull okhttp3.Call call, @NonNull java.io.IOException e) {
+            client.newCall(request).enqueue(new Callback() {
+                public void onFailure(@NonNull Call call, @NonNull java.io.IOException e) {
                     Log.e(TAG, "Failed to send notification", e);
                 }
 
-                @Override
-                public void onResponse(@NonNull okhttp3.Call call, @NonNull okhttp3.Response response) {
-                    if (response.isSuccessful()) {
-                        Log.d(TAG, "Notification sent successfully.");
-                    } else {
-                        Log.e(TAG, "Failed to send notification: " + response.message());
-                    }
+                public void onResponse(@NonNull Call call, @NonNull Response response) {
+                    Log.d(TAG, "Notification response: " + response.message());
                 }
             });
-
-        } catch (org.json.JSONException e) {
+        } catch (JSONException e) {
             Log.e(TAG, "JSON error", e);
         }
     }
+
     public interface OnFriendRequestListener {
         void onRequestsChanged(DataSnapshot snapshot);
         void onRequestError(Exception e);
     }
+
     public void listenForIncomingRequests(OnFriendRequestListener listener) {
-        if (currentUser == null) {
-            Log.e(TAG, "No authenticated user found.");
-            return;
-        }
+        if (currentUser == null) return;
 
-        DatabaseReference incomingRef = FirebaseDatabase.getInstance()
-                .getReference("friendRequests")
-                .child(currentUser.getUid());
-
+        DatabaseReference incomingRef = friendRequestsRef.child(currentUser.getUid());
         incomingRef.addValueEventListener(new ValueEventListener() {
-            @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 listener.onRequestsChanged(snapshot);
             }
 
-            @Override
             public void onCancelled(@NonNull DatabaseError error) {
                 listener.onRequestError(error.toException());
             }
         });
     }
+
+    public interface OnFriendsFetchedListener {
+        void onFriendsFetched(DataSnapshot snapshot);
+        void onError(Exception e);
+    }
+
+    public void fetchFriends(OnFriendsFetchedListener listener) {
+        if (currentUser == null) return;
+
+        DatabaseReference friendsRef = FirebaseDatabase.getInstance()
+                .getReference("friends")
+                .child(currentUser.getUid());
+
+        friendsRef.addListenerForSingleValueEvent(new ValueEventListener() {
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                listener.onFriendsFetched(snapshot);
+            }
+
+            public void onCancelled(@NonNull DatabaseError error) {
+                listener.onError(error.toException());
+            }
+        });
+    }
+
+    public void unfriend(String friendUid, @NonNull Runnable onSuccess, @NonNull Runnable onFailure) {
+        if (currentUser == null) return;
+
+        String currentUid = currentUser.getUid();
+        DatabaseReference friendsRef = FirebaseDatabase.getInstance().getReference("friends");
+
+        friendsRef.child(currentUid).child(friendUid).removeValue()
+                .addOnSuccessListener(aVoid -> {
+                    friendsRef.child(friendUid).child(currentUid).removeValue()
+                            .addOnSuccessListener(aVoid2 -> onSuccess.run())
+                            .addOnFailureListener(e -> onFailure.run());
+                })
+                .addOnFailureListener(e -> onFailure.run());
+    }
+
+
+
+    public void listenToFriends(OnFriendsFetchedListener listener) {
+        if (currentUser == null) return;
+
+        DatabaseReference friendsRef = FirebaseDatabase.getInstance()
+                .getReference("friends")
+                .child(currentUser.getUid());
+
+        friendsRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                listener.onFriendsFetched(snapshot);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                listener.onError(error.toException());
+            }
+        });
+    }
+
 }

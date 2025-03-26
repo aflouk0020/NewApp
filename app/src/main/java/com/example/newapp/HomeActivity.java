@@ -84,18 +84,7 @@ public class HomeActivity extends AppCompatActivity {
             }
         }
 
-//        if (getIntent() != null && "requests".equals(getIntent().getStringExtra("navigate_to"))) {
-//            getSupportFragmentManager()
-//                    .beginTransaction()
-//                    .replace(R.id.fragment_container, new RequestsFragment())
-//                    .addToBackStack(null)
-//                    .commit();
-//        }
-//        if (savedInstanceState == null) {
-//            getSupportFragmentManager().beginTransaction()
-//                    .replace(R.id.fragment_container, new HomeFragment())
-//                    .commit();
-//        }
+
         if (getIntent() != null && "requests".equals(getIntent().getStringExtra("openFragment"))) {
             // open RequestsFragment
             getSupportFragmentManager().beginTransaction()
