@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 🔹 Friend Energy Details Card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_friend_details"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="@color/cradViewColor">
+
+        <LinearLayout
+            android:id="@+id/friend_card_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:gravity="center_horizontal">
+
+            <!-- Header -->
+            <TextView
+                android:id="@+id/friend_card_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Friend Energy Details ▼"
+                android:textSize="18sp"
+                android:fontFamily="@font/normal"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center"
+                android:paddingBottom="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <!-- Collapsible Content -->
+            <LinearLayout
+                android:id="@+id/friend_card_details"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/friend_email"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Email: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/friend_family_size"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Family Size: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/friend_room_number"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Room Number: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/friend_energy_usage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Energy Usage: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/friend_monthly_kwh"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Monthly kWh: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/friend_points"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Points: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textStyle="bold"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="12dp"
+                    android:gravity="center" />
+
+                <Button
+                    android:id="@+id/btn_unfriend"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Unfriend"
+                    android:textColor="@android:color/white"
+                    android:backgroundTint="@color/red"
+                    android:layout_marginTop="16dp"
+                    android:fontFamily="@font/normal"
+                    android:textStyle="bold"
+                    android:padding="10dp"
+                    android:gravity="center" />
+
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- 🔸 Totals Card -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/card_friend_totals"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:clickable="true"
+        android:focusable="true"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="@color/cradViewColor">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:gravity="center_horizontal">
+
+            <!-- Header -->
+            <TextView
+                android:id="@+id/friend_totals_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Totals ▼"
+                android:textSize="18sp"
+                android:fontFamily="@font/normal"
+                android:textStyle="bold"
+                android:textColor="@color/black"
+                android:gravity="center"
+                android:paddingBottom="8dp"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <!-- Collapsible Content -->
+            <LinearLayout
+                android:id="@+id/friend_totals_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:gravity="center_horizontal">
+
+                <TextView
+                    android:id="@+id/text_total_usage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Total Usage: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/text_total_fridge"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Fridge: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/text_total_heating"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Heating: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/text_total_washing_machine"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Washing Machine: --"
+                    android:textSize="16sp"
+                    android:fontFamily="@font/normal"
+                    android:textColor="@color/black"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+</LinearLayout>

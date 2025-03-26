@@ -2,24 +2,31 @@ package com.example.newapp;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.cardview.widget.CardView;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 
 import com.google.android.material.progressindicator.CircularProgressIndicator;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -89,7 +96,22 @@ public class HomeFragment extends Fragment {
             });
         });
 
-        // 👥 Show friends
+        loadFriends();
+
+        circularProgressIcon.setOnClickListener(v -> {
+            FragmentManager fragmentManager = getParentFragmentManager();
+            FragmentTransaction transaction = fragmentManager.beginTransaction();
+            transaction.replace(R.id.fragment_container, new EnergyDetailsFragment());
+            transaction.addToBackStack(null);
+            transaction.commit();
+        });
+
+        startProgressSync();
+
+        return view;
+    }
+
+    private void loadFriends() {
         friendManager.fetchFriends(new FriendManager.OnFriendsFetchedListener() {
             @Override
             public void onFriendsFetched(DataSnapshot snapshot) {
@@ -106,50 +128,70 @@ public class HomeFragment extends Fragment {
 
                 for (DataSnapshot friendSnap : snapshot.getChildren()) {
                     String friendUid = friendSnap.getKey();
-
                     Context innerCtx = getContext();
                     if (innerCtx == null) continue;
 
                     LinearLayout friendItem = new LinearLayout(innerCtx);
-                    friendItem.setOrientation(LinearLayout.HORIZONTAL);
-                    friendItem.setPadding(0, 24, 0, 24);
+                    friendItem.setOrientation(LinearLayout.VERTICAL);
+                    friendItem.setGravity(Gravity.CENTER_HORIZONTAL);
+                    friendItem.setPadding(16, 16, 16, 16);
 
-                    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                    );
-                    friendItem.setLayoutParams(params);
+                    CardView circleCard = new CardView(innerCtx);
+                    LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(150, 150);
+                    circleCard.setLayoutParams(cardParams);
+                    circleCard.setRadius(75);
+                    circleCard.setCardElevation(8);
+                    circleCard.setCardBackgroundColor(ContextCompat.getColor(innerCtx, R.color.white));
 
-                    TextView friendView = new TextView(innerCtx);
-                    friendView.setText("Loading...");
-                    friendView.setTextSize(16);
-                    friendView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+                    FrameLayout circleContainer = new FrameLayout(innerCtx);
+                    circleContainer.setLayoutParams(new FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+                    ));
 
-                    Button unfriendBtn = new Button(innerCtx);
-                    unfriendBtn.setText("Unfriend");
-                    unfriendBtn.setOnClickListener(v -> {
-                        friendManager.unfriend(friendUid,
-                                () -> {
-                                    Toast.makeText(innerCtx, "Unfriended!", Toast.LENGTH_SHORT).show();
-                                    friendsContainer.removeView(friendItem);
-                                },
-                                () -> Toast.makeText(innerCtx, "Failed to unfriend", Toast.LENGTH_SHORT).show()
-                        );
+                    View statusDot = new View(innerCtx);
+                    FrameLayout.LayoutParams dotParams = new FrameLayout.LayoutParams(24, 24);
+                    dotParams.gravity = Gravity.CENTER;
+                    statusDot.setLayoutParams(dotParams);
+                    statusDot.setBackground(ContextCompat.getDrawable(innerCtx, R.drawable.circle_background));
+
+                    circleCard.setOnClickListener(v -> {
+                        usersRef.child(friendUid).get().addOnSuccessListener(userSnap -> {
+                            String email = userSnap.child("email").getValue(String.class);
+                            FragmentManager fragmentManager = getParentFragmentManager();
+                            FragmentTransaction transaction = fragmentManager.beginTransaction();
+                            transaction.replace(R.id.fragment_container, FriendsDetailsFragment.newInstance(friendUid, email));
+                            transaction.addToBackStack(null);
+                            transaction.commit();
+                        });
                     });
 
-                    friendItem.addView(friendView);
-                    friendItem.addView(unfriendBtn);
+
+
+
+                    circleContainer.addView(statusDot);
+                    circleCard.addView(circleContainer);
+                    friendItem.addView(circleCard);
+
+                    TextView emailLabel = new TextView(innerCtx);
+                    emailLabel.setText("Loading...");
+                    emailLabel.setTextSize(14);
+                    emailLabel.setTypeface(null, Typeface.BOLD);
+                    emailLabel.setGravity(Gravity.CENTER_HORIZONTAL);
+                    emailLabel.setPadding(0, 8, 0, 0);
+                    friendItem.addView(emailLabel);
+
                     friendsContainer.addView(friendItem);
 
-                    // Now fetch email + online status
                     usersRef.child(friendUid).get().addOnSuccessListener(userSnap -> {
                         String email = userSnap.child("email").getValue(String.class);
                         FirebaseDatabase.getInstance().getReference("onlineStatus")
                                 .child(friendUid)
                                 .get().addOnSuccessListener(statusSnap -> {
                                     boolean isOnline = Boolean.TRUE.equals(statusSnap.getValue(Boolean.class));
-                                    String statusEmoji = isOnline ? "✅ " : "⚪ ";
-                                    friendView.setText(statusEmoji + (email != null ? email : friendUid));
+                                    int color = ContextCompat.getColor(innerCtx,
+                                            isOnline ? R.color.green_progress : R.color.gray_progress);
+                                    statusDot.getBackground().setTint(color);
+                                    emailLabel.setText(email != null ? email : friendUid);
                                 });
                     });
                 }
@@ -162,18 +204,6 @@ public class HomeFragment extends Fragment {
                     Toast.makeText(ctx, "Failed to load friends: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
-
-        circularProgressIcon.setOnClickListener(v -> {
-            FragmentManager fragmentManager = getParentFragmentManager();
-            FragmentTransaction transaction = fragmentManager.beginTransaction();
-            transaction.replace(R.id.fragment_container, new EnergyDetailsFragment());
-            transaction.addToBackStack(null);
-            transaction.commit();
-        });
-
-        startProgressSync();
-
-        return view;
     }
 
     private void startProgressSync() {
