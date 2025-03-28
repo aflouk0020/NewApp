@@ -3,7 +3,7 @@ package com.example.newapp;
 import android.content.Context;
 import android.util.Log;
 import android.widget.Toast;
-
+import androidx.annotation.Nullable;
 import androidx.annotation.NonNull;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -124,6 +124,9 @@ public class FriendManager {
         }).addOnFailureListener(e ->
                 Toast.makeText(context, "Error loading request", Toast.LENGTH_SHORT).show());
     }
+
+
+
 
     public void sendFriendRequest(String targetUid) {
         if (currentUser == null || currentUser.getUid().equals(targetUid)) {

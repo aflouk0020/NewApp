@@ -45,6 +45,7 @@
                             android:textSize="16sp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
+
                     <Button
                         android:id="@+id/btn_search"
                         android:layout_width="wrap_content"
@@ -71,6 +72,14 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:paddingTop="16dp" />
+
+                    <ImageView
+                        android:id="@+id/friend_online_indicator"
+                        android:layout_width="12dp"
+                        android:layout_height="12dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/green_dot"
+                        android:visibility="gone"/>
 
 
                     <FrameLayout
@@ -101,8 +110,8 @@
 
                     <com.google.android.material.progressindicator.CircularProgressIndicator
                         android:id="@+id/circular_progress_icon"
-                        android:layout_width="72dp"
-                        android:layout_height="72dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:layout_gravity="center"
                         android:indeterminate="false"
                         app:indicatorColor="@color/green_progress"

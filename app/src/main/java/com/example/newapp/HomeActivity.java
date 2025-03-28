@@ -8,11 +8,13 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+
+
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
-
+import android.widget.ImageView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;  // For AlertDialog
@@ -37,6 +39,7 @@ public class HomeActivity extends AppCompatActivity {
     private TextView washingMachineTextView, fridgeTextView, heatingSystemTextView, lastUpdatedTextView, remainingEnergyText;
     private ProgressBar energyProgressBar;
     private static final String TAG = "HomeActivity";
+    private TextView badgeTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -305,15 +308,69 @@ public class HomeActivity extends AppCompatActivity {
                 }
                 return true;
             };
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+
+        MenuItem requestItem = menu.findItem(R.id.action_requests);
+        requestItem.setActionView(R.layout.menu_item_with_badge);
+        View actionView = requestItem.getActionView();
+
+        // Hook into icon + badge views
+        ImageView icon = actionView.findViewById(R.id.icon_notification);
+        TextView badge = actionView.findViewById(R.id.badge_text);
+
+        icon.setOnClickListener(v -> openRequestsFragment());
+
+        // Save for Firebase updates
+        this.badgeTextView = badge;
+
+        checkPendingRequests(); // ✅ Check Firebase to show/hide badge on launch
         return true;
     }
 
-@Override
+
+
+
+
+
+    private void checkPendingRequests() {
+        String currentUid = FirebaseAuth.getInstance().getCurrentUser().getUid();
+        DatabaseReference ref = FirebaseDatabase.getInstance().getReference("friendRequests").child(currentUid);
+
+        ref.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                int pendingCount = 0;
+
+                for (DataSnapshot requestSnap : snapshot.getChildren()) {
+                    String status = requestSnap.child("status").getValue(String.class);
+                    if ("pending".equals(status)) pendingCount++;
+                }
+
+                if (badgeTextView != null) {
+                    badgeTextView.setVisibility(pendingCount > 0 ? View.VISIBLE : View.GONE);
+                    badgeTextView.setText(String.valueOf(pendingCount));
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+                Log.e("HomeActivity", "Failed to check requests", error.toException());
+            }
+        });
+    }
+
+
+    private void openRequestsFragment() {
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, new RequestsFragment())
+                .addToBackStack(null)
+                .commit();
+    }
+
+    @Override
 public boolean onOptionsItemSelected(@NonNull MenuItem item) {
     int id = item.getItemId();
 
@@ -341,4 +398,6 @@ public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         startActivity(intent);
         finish();
     }
+
+
 }

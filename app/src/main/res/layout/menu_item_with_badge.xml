@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center">
+
+    <!-- Notification Icon -->
+    <ImageView
+        android:id="@+id/icon_notification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_notification"
+        android:contentDescription="Notification"
+        android:padding="8dp"
+        android:layout_gravity="center"/>
+
+    <!-- Red Dot / Badge -->
+    <TextView
+        android:id="@+id/badge_text"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:background="@drawable/badge_background"
+        android:text="!"
+        android:textColor="@android:color/white"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="4dp"/>
+</FrameLayout>

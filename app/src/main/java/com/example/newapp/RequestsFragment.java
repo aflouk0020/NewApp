@@ -47,18 +47,24 @@ public class RequestsFragment extends Fragment {
                     String requesterUid = requestSnap.child("requesterUid").getValue(String.class);
                     String status = requestSnap.child("status").getValue(String.class);
 
-                    if (!"pending".equals(status)) continue; // ✅ Only show pending
+                    //if (!"pending".equals(status)) continue; // ✅ Only show pending
+                    if (!"pending".equals(status) || requesterUid == null) continue;
+
+                    Log.d("RequestSnap", "Key: " + requestKey + ", requester: " + requesterUid + ", status: " + status);
 
                     View requestView = getLayoutInflater().inflate(R.layout.friend_request_item, yourContainer, false);
                     TextView emailText = requestView.findViewById(R.id.requesterEmail);
                     Button acceptButton = requestView.findViewById(R.id.acceptButton);
                     Button denyButton = requestView.findViewById(R.id.denyButton);
+                    Log.d("RequestSnap", requestSnap.toString());
 
                     usersRef.child(requesterUid).child("email").get().addOnSuccessListener(snapshot1 -> {
                         String requesterEmail = snapshot1.getValue(String.class);
                         emailText.setText("From: " + (requesterEmail != null ? requesterEmail : requesterUid));
                     }).addOnFailureListener(e -> {
                         emailText.setText("From: " + requesterUid);
+                        Log.w("RequestsFragment", "Failed to get email for: " + requesterUid);
+
                     });
 
                     acceptButton.setOnClickListener(v -> friendManager.acceptRequest(requestKey, requesterUid));
